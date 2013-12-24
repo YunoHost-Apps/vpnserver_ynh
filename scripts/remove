@@ -1,0 +1,19 @@
+#!/bin/bash
+
+domain=$(cat /etc/yunohost/current_host)
+
+sudo service openvpn stop
+
+sudo userdel openvpn
+
+sudo apt-get remove -y -qq openvpn openvpn-auth-ldap
+
+sudo yunohost firewall disallow UDP 1194
+
+sudo yunohost app service openvpn --remove
+
+sudo rm -f /etc/openvpn/yunohost.conf \
+    /etc/openvpn/auth/ldap.conf \
+    /etc/yunohost/certs/$domain/dh.pem \
+    /etc/sysctl.d/openvpn.conf \
+    /var/log/openvpn.log

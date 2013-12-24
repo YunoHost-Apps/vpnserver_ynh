@@ -1,0 +1,37 @@
+#!/bin/bash
+
+domain=$(cat /etc/yunohost/current_host)
+
+# Check port availability
+sudo yunohost app checkport 1194
+if [[ ! $? -eq 0 ]]; then
+  exit 1
+fi
+
+# Open port in firewall
+sudo yunohost firewall allow UDP 1194 > /dev/null 2>&1
+
+# Install official debian package
+sudo apt-get install openvpn openvpn-auth-ldap -y -qq
+
+# Create user
+sudo useradd openvpn
+
+# Create DH for main domain
+openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 1024
+
+# Make directories and set rights
+sudo mkdir -p /etc/openvpn/auth
+sudo touch /var/log/openvpn.log
+sudo chown openvpn: /var/log/openvpn.log
+
+# Configure OpenVPN and restart
+sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
+sudo cp ../conf/yunohost.conf /etc/openvpn/
+sudo cp ../conf/ldap.conf /etc/openvpn/auth/
+sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
+sudo sysctl -p /etc/sysctl.d/openvpn.conf
+sudo service openvpn restart
+
+# Add OpenVPN to YunoHost's monitored services
+sudo yunohost app service openvpn --log /var/log/openvpn.log

@@ -1,0 +1,14 @@
+{
+  "name": "OpenVPN",
+  "id": "openvpn",
+  "description": {
+    "en": "Your Secure and Private Tunnel to the Internet",
+    "fr": "Votre tunnel privé et sécurisé vers Internet"
+  },
+  "developer": {
+    "name": "kload",
+    "email": "kload@kload.fr",
+    "url": "http://openvpn.net"
+  },
+  "multi_instance": "false"
+}
