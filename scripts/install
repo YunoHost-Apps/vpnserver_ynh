@@ -3,9 +3,9 @@
 domain=$(cat /etc/yunohost/current_host)
 
 # Find network interface (usually eth0/1 or wlan0)
-iface=$(ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep eth | head -n 1)
+iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep eth | head -n 1)
 if [[ ! $? -eq 0 ]]; then
-    iface=$(ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep wlan | head -n 1)
+    iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep wlan | head -n 1)
     if [[ ! $? -eq 0 ]]; then
         echo "Wrong network interface"
         exit 1
@@ -48,7 +48,7 @@ sudo sysctl -p /etc/sysctl.d/openvpn.conf
 sed -i "s@IFACETOCHANGE@$iface@g" ../conf/cron
 sudo cp ../conf/cron /etc/openvpn/yunohost.cron
 echo "*/5 * * * * root bash /etc/openvpn/yunohost.cron" | sudo tee /etc/cron.d/yunohost-openvpn
-iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
 
 # Add OpenVPN to YunoHost's monitored services
 sudo yunohost app service openvpn --log /var/log/openvpn.log
