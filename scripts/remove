@@ -17,4 +17,5 @@ sudo rm -f /etc/openvpn/yunohost.conf \
     /etc/yunohost/certs/$domain/dh.pem \
     /etc/sysctl.d/openvpn.conf \
     /etc/cron.d/yunohost-openvpn \
+    /etc/openvpn/yunohost.cron \
     /var/log/openvpn.log
