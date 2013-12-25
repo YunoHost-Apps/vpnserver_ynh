@@ -10,5 +10,6 @@
     "email": "kload@kload.fr",
     "url": "http://openvpn.net"
   },
-  "multi_instance": "false"
+  "multi_instance": "false",
+  "arguments": {}
 }
