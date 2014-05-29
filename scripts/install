@@ -3,14 +3,7 @@
 domain=$(cat /etc/yunohost/current_host)
 
 # Find network interface (usually eth0/1 or wlan0)
-iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep eth | head -n 1)
-if [[ ! $? -eq 0 ]]; then
-    iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep wlan | head -n 1)
-    if [[ ! $? -eq 0 ]]; then
-        echo "Wrong network interface"
-        exit 1
-    fi
-fi
+iface=$(sudo cat /etc/yunohost/interface)
 
 # Check port availability
 sudo yunohost app checkport 1194
@@ -28,7 +21,7 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 sudo useradd openvpn
 
 # Create DH for main domain
-sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 1024
+sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 1024 > /dev/null
 
 # Make directories and set rights
 sudo mkdir -p /etc/openvpn/auth
@@ -51,7 +44,7 @@ echo "*/5 * * * * root bash /etc/openvpn/yunohost.cron" | sudo tee /etc/cron.d/y
 sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
 
 # Add OpenVPN to YunoHost's monitored services
-sudo yunohost app service openvpn --log /var/log/openvpn.log
+sudo yunohost service add openvpn --log /var/log/openvpn.log
 
 # Let's go !
 sudo service openvpn restart
