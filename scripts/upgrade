@@ -3,14 +3,7 @@
 domain=$(cat /etc/yunohost/current_host)
 
 # Find network interface (usually eth0/1 or wlan0)
-iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep eth | head -n 1)
-if [[ ! $? -eq 0 ]]; then
-    iface=$(sudo ifconfig -a| grep -v ^$| grep ^[a-z*] | awk '{print $1}' | grep wlan | head -n 1)
-    if [[ ! $? -eq 0 ]]; then
-        echo "Wrong network interface"
-        exit 1
-    fi
-fi
+iface=$(sudo cat /etc/yunohost/interface)
 
 # Upgrade official debian package
 sudo apt-get install openvpn openvpn-auth-ldap -y -qq
