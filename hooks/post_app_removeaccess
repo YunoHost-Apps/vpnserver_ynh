@@ -13,7 +13,7 @@ then
         if [[ $? -eq 0 ]];
         then
             search_filter="(&(&(uid=%u)(objectClass=mailAccount))(|"
-            for user in $(sed s/,/ /g "$new_users")
+            for user in $(echo "$new_users" | sed "s/,/ /g")
             do
                 search_filter="$search_filter(uid=$user)"
             done
@@ -22,6 +22,6 @@ then
             search_filter="(&(&(uid=%u)(objectClass=mailAccount))(uid=$new_users))"
         fi
     fi
-    sed -i "s/SearchFilter .*/SearchFilter $search_filter/g" /etc/openvpn/auth/ldap.conf
-    service openvpn restart
+    sudo sed -i "s/SearchFilter .*/SearchFilter \"$search_filter\"/g" /etc/openvpn/auth/ldap.conf
+    sudo service openvpn restart
 fi
