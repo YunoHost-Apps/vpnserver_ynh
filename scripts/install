@@ -1,6 +1,14 @@
 #!/bin/bash
 
-domain=$(cat /etc/yunohost/current_host)
+# Retrieve arguments
+domain=$1
+path=$2
+
+# Check domain/path availability
+sudo yunohost app checkurl $domain$path -a openvpn
+if [[ ! $? -eq 0 ]]; then
+    exit 1
+fi
 
 # Find network interface (usually eth0/1 or wlan0)
 iface=$(sudo cat /etc/yunohost/interface)
@@ -24,14 +32,30 @@ sudo useradd openvpn
 sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 1024 > /dev/null
 
 # Make directories and set rights
+final_path=/var/www/openvpn
 sudo mkdir -p /etc/openvpn/auth
+sudo mkdir -p $final_path
 sudo touch /var/log/openvpn.log
 sudo chown openvpn: /var/log/openvpn.log
 
 # Configurations
+sed -i "s@PATHTOCHANGE@$path@g" ../conf/nginx.conf
+sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
+sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
+sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
+sudo cat /etc/ssl/certs/ca-yunohost_crt.pem >> ../conf/config-cli.ovpn
+echo "</ca>" >> ../conf/config-cli.ovpn
 sudo cp ../conf/yunohost.conf /etc/openvpn/
 sudo cp ../conf/ldap.conf /etc/openvpn/auth/
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/openvpn.conf
+
+# Copy web files
+sudo cp -a ../sources/* $final_path
+sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem $final_path/ca.crt
+sudo cp -a ../conf/config-cli.ovpn $final_path/$domain.ovpn
+sudo cp -a ../conf/config.ovpn $final_path/$domain.conf
+sudo chown www-data: $final_path
 
 # IP forwarding
 sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
@@ -47,4 +71,5 @@ sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
 sudo yunohost service add openvpn --log /var/log/openvpn.log
 
 # Let's go !
+sudo service nginx reload
 sudo service openvpn restart

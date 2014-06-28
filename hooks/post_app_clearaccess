@@ -1,0 +1,9 @@
+#!/bin/bash
+
+app=$1
+
+if [[ "openvpn" = "$app" ]];
+then
+    sed -i "s/SearchFilter .*/SearchFilter (&(uid=%u)(objectClass=mailAccount))/g" /etc/openvpn/auth/ldap.conf
+    service openvpn restart
+fi
