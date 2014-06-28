@@ -3,6 +3,15 @@
 domain=$(sudo yunohost app setting openvpn domain)
 path=$(sudo yunohost app setting openvpn path)
 
+# Set domain to main domain and path to /openvpn/ for retrocompatibility
+if [ -z "$domain" ];
+then
+    domain=$(cat /etc/yunohost/current_host)
+    path=/openvpn/
+    sudo yunohost app setting openvpn domain -v $domain
+    sudo yunohost app setting openvpn path -v $path
+fi
+
 # Find network interface (usually eth0/1 or wlan0)
 iface=$(sudo cat /etc/yunohost/interface)
 
