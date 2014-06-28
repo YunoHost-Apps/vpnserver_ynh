@@ -4,6 +4,13 @@
 domain=$1
 path=$2
 
+# Check if iptables is working
+sudo iptables -L
+if [[ ! $? -eq 0 ]]; then
+    echo "iptables is not available in your environment, aborting..."
+    exit 1
+fi
+
 # Check domain/path availability
 sudo yunohost app checkurl $domain$path -a openvpn
 if [[ ! $? -eq 0 ]]; then
