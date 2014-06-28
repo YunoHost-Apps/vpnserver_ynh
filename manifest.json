@@ -11,5 +11,25 @@
     "url": "http://openvpn.net"
   },
   "multi_instance": "false",
-  "arguments": {}
+  "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+                "ask": {
+                    "en": "Choose a domain for OpenVPN",
+                    "fr": "Choisissez un domaine pour OpenVPN"
+                },
+                "example": "domain.org"
+            },
+            {
+                "name": "path",
+                "ask": {
+                    "en": "Choose a path for OpenVPN",
+                    "fr": "Choisissez un chemin pour OpenVPN"
+                },
+                "example": "/openvpn",
+                "default": "/openvpn"
+            }
+        ]
+    }
 }
