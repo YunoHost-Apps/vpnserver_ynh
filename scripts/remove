@@ -11,7 +11,7 @@ sudo apt-get remove -y -qq openvpn openvpn-auth-ldap
 
 sudo yunohost firewall disallow UDP 1194 > /dev/null 2>&1
 
-sudo yunohost app service openvpn --remove
+sudo yunohost service remove openvpn
 
 sudo rm -rf /etc/openvpn/yunohost.conf \
     /etc/openvpn/auth/ldap.conf \

@@ -17,6 +17,12 @@ if [[ ! $? -eq 0 ]]; then
     exit 1
 fi
 
+# Ensure tun device is available
+if [[ ! -c /dev/net/tun ]]; then
+    echo "OpenVPN requires tun support, aborting..."
+    exit 1
+fi
+
 # Find network interface (usually eth0/1 or wlan0)
 iface=$(sudo cat /etc/yunohost/interface)
 
