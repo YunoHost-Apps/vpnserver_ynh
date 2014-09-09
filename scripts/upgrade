@@ -32,7 +32,7 @@ sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
 sudo cat /etc/ssl/certs/ca-yunohost_crt.pem >> ../conf/config-cli.ovpn
-echo "</ca>" >> ../conf/config-cli.ovpn
+echo -e "\n</ca>" >> ../conf/config-cli.ovpn
 sudo cp ../conf/yunohost.conf /etc/openvpn/
 sudo cp ../conf/ldap.conf /etc/openvpn/auth/
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/openvpn.conf
