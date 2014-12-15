@@ -83,6 +83,13 @@ sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
 # Add OpenVPN to YunoHost's monitored services
 sudo yunohost service add openvpn --log /var/log/openvpn.log
 
+# Ensure that tun device is still available, otherwise try to create it manually
+if [[ ! -c /dev/net/tun ]]; then
+    sudo mkdir -p /dev/net
+    sudo mknod /dev/net/tun c 10 200
+    sudo chmod 666 /dev/net/tun
+fi
+
 # Let's go !
 sudo service nginx reload
 sudo service openvpn restart
