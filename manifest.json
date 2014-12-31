@@ -5,16 +5,17 @@
     "en": "Your Secure and Private Tunnel to the Internet",
     "fr": "Votre tunnel privé et sécurisé vers Internet"
   },
-  "developer": {
+  "url": "http://openvpn.net",
+  "maintainer": {
     "name": "kload",
     "email": "kload@kload.fr",
-    "url": "http://openvpn.net"
   },
   "multi_instance": "false",
   "arguments": {
         "install" : [
             {
                 "name": "domain",
+                "type": "domain",
                 "ask": {
                     "en": "Choose a domain for OpenVPN",
                     "fr": "Choisissez un domaine pour OpenVPN"
@@ -23,6 +24,7 @@
             },
             {
                 "name": "path",
+                "type": "path",
                 "ask": {
                     "en": "Choose a path for OpenVPN",
                     "fr": "Choisissez un chemin pour OpenVPN"
