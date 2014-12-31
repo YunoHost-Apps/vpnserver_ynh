@@ -8,7 +8,7 @@
   "url": "http://openvpn.net",
   "maintainer": {
     "name": "kload",
-    "email": "kload@kload.fr",
+    "email": "kload@kload.fr"
   },
   "multi_instance": "false",
   "arguments": {
