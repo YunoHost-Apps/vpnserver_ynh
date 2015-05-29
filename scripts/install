@@ -42,7 +42,7 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 sudo useradd openvpn
 
 # Create DH for main domain
-sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 1024 > /dev/null
+sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 2048 > /dev/null
 
 # Make directories and set rights
 final_path=/var/www/openvpn
