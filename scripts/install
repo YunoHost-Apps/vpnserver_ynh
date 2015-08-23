@@ -92,4 +92,4 @@ fi
 
 # Let's go !
 sudo service nginx reload
-sudo service openvpn restart
+sudo service openvpn start
