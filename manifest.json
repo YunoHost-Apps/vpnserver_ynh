@@ -11,6 +11,12 @@
     "email": "kload@kload.fr"
   },
   "multi_instance": "false",
+  "services": [
+      "nginx",
+      "php5-fpm",
+      "slapd",
+      "openvpn"
+  ],
   "arguments": {
         "install" : [
             {
