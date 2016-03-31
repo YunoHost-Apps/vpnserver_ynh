@@ -1,6 +1,7 @@
 {
   "name": "OpenVPN",
   "id": "openvpn",
+  "packaging_format": 1,
   "description": {
     "en": "Your Secure and Private Tunnel to the Internet",
     "fr": "Votre tunnel privé et sécurisé vers Internet"
