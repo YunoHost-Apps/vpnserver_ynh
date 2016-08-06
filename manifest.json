@@ -9,7 +9,8 @@
   "url": "http://openvpn.net",
   "maintainer": {
     "name": "sebian",
-    "email": "seb@fooboozoo.fr"
+    "email": "seb@fooboozoo.fr",
+    "url": "https://github.com/YunoHost-Apps/openvpn_ynh"
   },
   "multi_instance": "false",
   "services": [
