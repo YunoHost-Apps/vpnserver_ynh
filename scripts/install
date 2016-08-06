@@ -5,16 +5,14 @@ domain=$1
 path=$2
 
 # Check if iptables is working
-sudo iptables -L
-if [[ ! $? -eq 0 ]]; then
-    echo "iptables is not available in your environment, aborting..."
-    exit 1
+if ! sudo iptables -L > /dev/null 2>&1; then
+  echo "iptables is not available in your environment, aborting..."
+  exit 1
 fi
 
 # Check domain/path availability
-sudo yunohost app checkurl $domain$path -a openvpn
-if [[ ! $? -eq 0 ]]; then
-    exit 1
+if ! sudo yunohost app checkurl "${domain}${path}" -a openvpn; then
+  exit 1
 fi
 
 # Ensure tun device is available
@@ -27,8 +25,7 @@ fi
 iface=$(sudo cat /etc/yunohost/interface)
 
 # Check port availability
-sudo yunohost app checkport 1194
-if [[ ! $? -eq 0 ]]; then
+if ! sudo yunohost app checkport 1194; then
   exit 1
 fi
 
@@ -42,12 +39,11 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 sudo useradd openvpn
 
 # Create DH for main domain
-sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 2048 > /dev/null
+sudo openssl dhparam -out "/etc/yunohost/certs/${domain}/dh.pem" 2048 > /dev/null
 
 # Make directories and set rights
 final_path=/var/www/openvpn
-sudo mkdir -p /etc/openvpn/auth
-sudo mkdir -p $final_path
+sudo mkdir -p /etc/openvpn/auth "${final_path}"
 sudo touch /var/log/openvpn.log
 sudo chown openvpn: /var/log/openvpn.log
 
@@ -57,18 +53,18 @@ sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
-sudo cat /etc/ssl/certs/ca-yunohost_crt.pem >> ../conf/config-cli.ovpn
+sudo cat /etc/ssl/certs/ca-yunohost_crt.pem|sudo tee -a ../conf/config-cli.ovpn
 echo -e "\n</ca>" >> ../conf/config-cli.ovpn
 sudo cp ../conf/yunohost.conf /etc/openvpn/
 sudo cp ../conf/ldap.conf /etc/openvpn/auth/
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/openvpn.conf
+sudo cp ../conf/nginx.conf "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
 
 # Copy web files
 sudo cp -a ../sources/* $final_path
 sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem $final_path/ca.crt
-sudo cp -a ../conf/config-cli.ovpn $final_path/$domain.ovpn
-sudo cp -a ../conf/config.ovpn $final_path/$domain.conf
-sudo chown www-data: $final_path
+sudo cp -a ../conf/config-cli.ovpn "${final_path}/${domain}.ovpn"
+sudo cp -a ../conf/config.ovpn "${final_path}/${domain}.conf"
+sudo chown www-data: "${final_path}"
 
 # IP forwarding
 sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
@@ -78,16 +74,16 @@ sudo sysctl -p /etc/sysctl.d/openvpn.conf
 sed -i "s@IFACETOCHANGE@$iface@g" ../conf/cron
 sudo cp ../conf/cron /etc/openvpn/yunohost.cron
 echo "*/5 * * * * root bash /etc/openvpn/yunohost.cron" | sudo tee /etc/cron.d/yunohost-openvpn
-sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o "${iface}" -j MASQUERADE
 
 # Add OpenVPN to YunoHost's monitored services
 sudo yunohost service add openvpn --log /var/log/openvpn.log
 
 # Ensure that tun device is still available, otherwise try to create it manually
 if [[ ! -c /dev/net/tun ]]; then
-    sudo mkdir -p /dev/net
-    sudo mknod /dev/net/tun c 10 200
-    sudo chmod 666 /dev/net/tun
+  sudo mkdir -p /dev/net
+  sudo mknod /dev/net/tun c 10 200
+  sudo chmod 666 /dev/net/tun
 fi
 
 # Let's go !
