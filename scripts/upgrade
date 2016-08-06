@@ -54,5 +54,6 @@ echo "*/5 * * * * root bash /etc/openvpn/yunohost.cron" | sudo tee /etc/cron.d/y
 sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o "${iface}" -j MASQUERADE
 
 # Restart
-sudo service nginx reload
-sudo service openvpn restart
+sudo systemctl reload nginx.service
+sudo systemctl enable openvpn.service
+sudo systemctl restart openvpn.service

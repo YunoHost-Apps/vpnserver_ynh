@@ -87,5 +87,6 @@ if [[ ! -c /dev/net/tun ]]; then
 fi
 
 # Let's go !
-sudo service nginx reload
-sudo service openvpn start
+sudo systemctl reload nginx.service
+sudo systemctl enable openvpn.service
+sudo systemctl restart openvpn.service
