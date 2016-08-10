@@ -3,6 +3,8 @@ OpenVPN for YunoHost
 
 http://openvpn.net/
 
+Repport issues here: https://dev.yunohost.org (you don't need to create an account and you can use you github credentials if you want)
+
 Configuration:
 
 * Download CA from `https://<your_server.tld>/yunohost/admin/ca.crt`
