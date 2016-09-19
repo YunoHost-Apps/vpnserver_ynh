@@ -4,6 +4,6 @@ app=$1
 
 if [[ "openvpn" = "$app" ]];
 then
-    sudo sed -i "s/SearchFilter .*/SearchFilter \"(\&(uid=%u)(objectClass=mailAccount))\"/g" /etc/openvpn/auth/ldap.conf
-    sudo service openvpn restart
+  sudo sed -i "s/SearchFilter .*/SearchFilter \"(\&(uid=%u)(objectClass=mailAccount))\"/g" /etc/openvpn/auth/ldap.conf
+ sudo systemctl restart openvpn.service
 fi
