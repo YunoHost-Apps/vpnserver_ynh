@@ -8,8 +8,8 @@
   },
   "url": "http://openvpn.net",
   "maintainer": {
-    "name": "kload",
-    "email": "kload@kload.fr"
+    "name": "sebian",
+    "email": "seb@fooboozoo.fr"
   },
   "multi_instance": "false",
   "services": [
