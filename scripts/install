@@ -39,7 +39,9 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 sudo useradd openvpn
 
 # Create DH for main domain
-sudo openssl dhparam -out "/etc/yunohost/certs/${domain}/dh.pem" 2048 > /dev/null
+echo "[info] Generate dhparam(4096) file, this step may be long..."
+sudo openssl dhparam -out "/etc/yunohost/certs/${domain}/dh.pem" 4096 > /dev/null
+sudo openvpn --genkey --secret /etc/openvpn/tls-auth.key
 
 # Make directories and set rights
 final_path=/var/www/openvpn
@@ -55,6 +57,14 @@ sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
 sudo cat /etc/ssl/certs/ca-yunohost_crt.pem|sudo tee -a ../conf/config-cli.ovpn
 echo -e "\n</ca>" >> ../conf/config-cli.ovpn
+# Config-cli
+echo -e "\n<tls-auth>" >> ../conf/config-cli.ovpn
+sudo cat /etc/openvpn/tls-auth.key|sudo tee -a ../conf/config-cli.ovpn
+echo -e "\n</tls-auth>" >> ../conf/config-cli.ovpn
+# Config
+echo -e "\n<tls-auth>" >> ../conf/config.ovpn
+sudo cat /etc/openvpn/tls-auth.key|sudo tee -a ../conf/config.ovpn
+echo -e "\n</tls-auth>" >> ../conf/config.ovpn
 sudo cp ../conf/yunohost.conf /etc/openvpn/
 sudo cp ../conf/ldap.conf /etc/openvpn/auth/
 sudo cp ../conf/nginx.conf "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
