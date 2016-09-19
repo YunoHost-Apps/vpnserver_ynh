@@ -1,6 +1,5 @@
 #!/bin/bash
 
-/sbin/iptables -L -t nat | grep 10.8.0.0/24 | grep MASQUERADE > /dev/null 2>&1
-if [[ ! $? -eq 0 ]]; then
-    /sbin/iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o IFACETOCHANGE -j MASQUERADE
+if ! (/sbin/iptables -L -t nat | grep 10.8.0.0/24 | grep MASQUERADE > /dev/null 2>&1); then
+  /sbin/iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o IFACETOCHANGE -j MASQUERADE
 fi
