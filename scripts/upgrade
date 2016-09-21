@@ -6,10 +6,10 @@ path=$(sudo yunohost app setting openvpn path)
 # Set domain to main domain and path to /openvpn/ for retrocompatibility
 if [ -z "$domain" ];
 then
-    domain=$(cat /etc/yunohost/current_host)
-    path=/openvpn/
-    sudo yunohost app setting openvpn domain -v $domain
-    sudo yunohost app setting openvpn path -v $path
+  domain=$(cat /etc/yunohost/current_host)
+  path=/openvpn/
+  sudo yunohost app setting openvpn domain -v "${domain}"
+  sudo yunohost app setting openvpn path -v "${path}"
 fi
 
 # Find network interface (usually eth0/1 or wlan0)
@@ -20,8 +20,7 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 
 # Make directories and set rights
 final_path=/var/www/openvpn
-sudo mkdir -p /etc/openvpn/auth
-sudo mkdir -p $final_path
+sudo mkdir -p /etc/openvpn/auth "${final_path}"
 sudo touch /var/log/openvpn.log
 sudo chown openvpn: /var/log/openvpn.log
 
@@ -31,18 +30,20 @@ sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
-sudo cat /etc/ssl/certs/ca-yunohost_crt.pem >> ../conf/config-cli.ovpn
+sudo cat /etc/ssl/certs/ca-yunohost_crt.pem|sudo tee -a ../conf/config-cli.ovpn
 echo -e "\n</ca>" >> ../conf/config-cli.ovpn
 sudo cp ../conf/yunohost.conf /etc/openvpn/
 sudo cp ../conf/ldap.conf /etc/openvpn/auth/
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/openvpn.conf
+sudo cp ../conf/nginx.conf "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
 
 # Copy web files
 sudo cp -a ../sources/* $final_path
-sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem $final_path/ca.crt
-sudo cp -a ../conf/config-cli.ovpn $final_path/$domain.ovpn
-sudo cp -a ../conf/config.ovpn $final_path/$domain.conf
-sudo chown www-data: $final_path
+sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem "${final_path}/ca.crt"
+sudo cp /etc/openvpn/ta.key "${final_path}/ta.key"
+sudo cp -a ../conf/config-cli.ovpn "${final_path}/${domain}.ovpn"
+sudo cp -a ../conf/config.ovpn "${final_path}/${domain}.conf"
+sudo chown www-data: "${final_path}"
+sudo chmod 644 "${final_path}/ta.key"
 
 # IP forwarding
 sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
@@ -52,8 +53,9 @@ sudo sysctl -p /etc/sysctl.d/openvpn.conf
 sed -i "s@IFACETOCHANGE@$iface@g" ../conf/cron
 sudo cp ../conf/cron /etc/openvpn/yunohost.cron
 echo "*/5 * * * * root bash /etc/openvpn/yunohost.cron" | sudo tee /etc/cron.d/yunohost-openvpn
-sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o $iface -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o "${iface}" -j MASQUERADE
 
 # Restart
-sudo service nginx reload
-sudo service openvpn restart
+sudo systemctl reload nginx.service
+sudo systemctl enable openvpn.service
+sudo systemctl restart openvpn.service

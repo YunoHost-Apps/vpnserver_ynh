@@ -1,7 +1,6 @@
 #!/bin/bash
 
 domain=$(sudo yunohost app setting openvpn domain)
-path=$(sudo yunohost app setting openvpn path)
 
 sudo service openvpn stop
 
@@ -14,11 +13,12 @@ sudo yunohost firewall disallow UDP 1194 > /dev/null 2>&1
 sudo yunohost service remove openvpn
 
 sudo rm -rf /etc/openvpn/yunohost.conf \
-    /etc/openvpn/auth/ldap.conf \
-    /etc/yunohost/certs/$domain/dh.pem \
-    /etc/sysctl.d/openvpn.conf \
-    /etc/cron.d/yunohost-openvpn \
-    /etc/openvpn/yunohost.cron \
-    /var/log/openvpn.log \
-    /var/www/openvpn \
-    /etc/nginx/conf.d/$domain.d/openvpn.conf
+  /etc/openvpn/auth/ldap.conf \
+  "/etc/yunohost/certs/${domain}/dh.pem" \
+  /etc/sysctl.d/openvpn.conf \
+  /etc/cron.d/yunohost-openvpn \
+  /etc/openvpn/yunohost.cron \
+  /etc/openvpn/ta.key \
+  /var/log/openvpn.log \
+  /var/www/openvpn \
+  "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
