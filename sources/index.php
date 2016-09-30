@@ -26,7 +26,6 @@
             <li><a href="ca.crt">Download Certificate Authority (CA) of this server</a></li>
             <li><a href="<?php echo $_SERVER['SERVER_NAME']; ?>.conf">Download OpenVPN configuration for NetworkManager</a></li>
             <li><a href="<?php echo $_SERVER['SERVER_NAME']; ?>.ovpn">Download OpenVPN configuration for command-line client</a></li>
-            <li><a href="ta.key">Download TLS auth key (shared secret) of this server</a></li>
         </ul>
     </section>
 
