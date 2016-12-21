@@ -6,13 +6,17 @@
     "en": "Your Secure and Private Tunnel to the Internet",
     "fr": "Votre tunnel privé et sécurisé vers Internet"
   },
+  "requirements": {
+      "yunohost": ">= 2.4"
+  },
+  "license": "free",
   "url": "http://openvpn.net",
   "maintainer": {
     "name": "sebian",
     "email": "seb@fooboozoo.fr",
     "url": "https://github.com/YunoHost-Apps/openvpn_ynh"
   },
-  "multi_instance": "false",
+  "multi_instance": false,
   "services": [
       "nginx",
       "php5-fpm",
