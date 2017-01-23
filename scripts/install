@@ -62,7 +62,7 @@ sudo cp ../conf/ldap.conf /etc/openvpn/auth/
 sudo cp ../conf/nginx.conf "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
 
 # Copy web files
-sudo cp -a ../sources/* $final_path
+sudo cp -a ../sources/. $final_path
 sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem $final_path/ca.crt
 sudo cp /etc/openvpn/ta.key "${final_path}/ta.key"
 sudo cp -a ../conf/config-cli.ovpn "${final_path}/${domain}.ovpn"
