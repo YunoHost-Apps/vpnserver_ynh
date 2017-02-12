@@ -80,13 +80,13 @@ install_files () {
 
     # Configurations
     export ca_yunohost=$(sudo cat /etc/ssl/certs/ca-yunohost_crt.pem)
+    export ta_key=$(sudo cat /etc/openvpn/ta.key)
     ynh_configure yunohost.conf "/etc/openvpn/yunohost.conf"
     ynh_configure config.ovpn "${local_path}/${domain}.conf"
     ynh_configure config-cli.ovpn "${local_path}/${domain}.ovpn"
     ynh_configure fail2ban-jail.conf "/etc/fail2ban/jail.d/${app}.conf"
     sudo cp ../conf/ldap.conf /etc/openvpn/auth/
     sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem "${local_path}/ca.crt"
-    sudo cp /etc/openvpn/ta.key "${local_path}/ta.key"
     sudo cp ../conf/fail2ban-filter.conf /etc/fail2ban/filter.d/$app.conf
     sudo cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
     

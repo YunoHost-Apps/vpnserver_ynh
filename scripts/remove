@@ -19,7 +19,6 @@ sudo yunohost service remove openvpn
 
 sudo rm -rf /etc/openvpn/yunohost.conf \
   /etc/openvpn/auth/ldap.conf \
-  /etc/openvpn/yunohost.cron \
   /etc/openvpn/ta.key \
   /etc/sysctl.d/openvpn.conf
 
