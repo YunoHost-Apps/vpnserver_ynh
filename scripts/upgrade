@@ -40,4 +40,6 @@ if [ "${version}" = "2.3.4-1" ]; then
 
     # Install configured files and restart services 
     setup_and_restart
+
+    mv /var/log/openvpn.log /var/log/openvpn/status.log
 fi

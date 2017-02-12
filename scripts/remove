@@ -21,13 +21,18 @@ sudo rm -rf /etc/openvpn/yunohost.conf \
   /etc/openvpn/auth/ldap.conf \
   /etc/openvpn/yunohost.cron \
   /etc/openvpn/ta.key \
-  /etc/sysctl.d/openvpn.conf \
-  /var/log/openvpn.log 
+  /etc/sysctl.d/openvpn.conf
+
+# TODO: May be we shouldn't remove it
+sudo rm -rf  /var/log/openvpn
+
 
 ynh_secure_rm "$local_path"
 ynh_secure_rm "/etc/yunohost/certs/${domain}/dh.pem"
 ynh_secure_rm "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
-
+ynh_secure_rm "/etc/logrotate.d/$app.conf"
+ynh_secure_rm "/etc/fail2ban/filter.d/$app.conf"
+ynh_secure_rm "/etc/fail2ban/jail.d/${app}.conf"
 
 ynh_rm_nginx_conf
 ynh_rm_php_fpm_conf

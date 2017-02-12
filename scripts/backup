@@ -22,8 +22,8 @@ my_ynh_backup () {
 }
 
 # Copy the app files
-my_ynh_backup "$local_path" "sources/www"
-my_ynh_backup "/etc/openvpn" "sources/etc"
+my_ynh_backup "$local_path" "sources"
+my_ynh_backup "/etc/openvpn" "etc"
 my_ynh_backup "/etc/yunohost/certs/${domain}/dh.pem" "certs/dh.pem"
 
 # Copy the conf files
@@ -32,6 +32,9 @@ my_ynh_backup "/etc/sysctl.d/openvpn.conf" "conf/sysctl"
 my_ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/nginx.conf"
 my_ynh_backup "/etc/php5/fpm/pool.d/$app.conf" "conf/php-fpm.conf"
 my_ynh_backup "/etc/php5/fpm/conf.d/20-$app.ini" "conf/php-fpm.ini"
+my_ynh_backup "/etc/fail2ban/jail.d/${app}.conf" "conf/fail2ban-jail.conf"
+my_ynh_backup "/etc/fail2ban/filter.d/$app.conf" "conf/fail2ban-filter.conf"
+my_ynh_backup "/etc/logrotate.d/$app.conf" "conf/logrotate.conf"
 
 # Copy log
-my_ynh_backup "/var/log/openvpn.log" "log/openvpn.log"
+my_ynh_backup "/var/log/openvpn" "log"

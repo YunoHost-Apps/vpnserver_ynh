@@ -5,4 +5,4 @@ source _common.sh
 #is_upnp=$1
 #is_ipv6=$2
 
-configure_firewall
+add_firewall_rules

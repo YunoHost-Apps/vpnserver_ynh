@@ -91,7 +91,8 @@ management /var/run/openvpn.udp.socket unix
 management-client-user root
 
 ; Logs
-status /var/log/openvpn.log
+status /var/log/openvpn/status.log
+log-append  /var/log/openvpn/server.log
 
 ; LES DEUX OPTIONS SUIVANTES FONCTIONNENT SEULEMENT AVEC UDP
 ; Pour contrer les encapsulations (ADSL, ...) et l'absence de découverte de MTU
