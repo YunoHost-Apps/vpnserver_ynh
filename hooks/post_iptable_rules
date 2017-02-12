@@ -1,0 +1,8 @@
+#!/bin/bash
+source /usr/share/yunohost/helpers
+source _common.sh
+
+#is_upnp=$1
+#is_ipv6=$2
+
+configure_firewall

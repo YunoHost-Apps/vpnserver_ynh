@@ -2,6 +2,7 @@
   "name": "OpenVPN",
   "id": "openvpn",
   "packaging_format": 1,
+  "version": "2.3.4-2",
   "description": {
     "en": "Your Secure and Private Tunnel to the Internet",
     "fr": "Votre tunnel privé et sécurisé vers Internet"
@@ -9,7 +10,7 @@
   "requirements": {
       "yunohost": ">= 2.4"
   },
-  "license": "free",
+  "license": "GPL-2.0",
   "url": "http://openvpn.net",
   "maintainer": {
     "name": "sebian",
@@ -43,6 +44,16 @@
                 },
                 "example": "/openvpn",
                 "default": "/openvpn"
+            },
+            {
+                "name": "ip4ranges",
+                "type": "string",
+                "ask": {
+                    "en": "List IPv4 range to attribute to VPN clients (seperated by space)",
+                    "fr": "Listez les plages d'adresses IPv4 à attribuer aux clients VPN (séparé par des espaces)"
+                },
+                "example": "10.8.0.0/24",
+                "default": "10.8.0.0/24"
             }
         ]
     }

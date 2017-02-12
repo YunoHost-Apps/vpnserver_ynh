@@ -5,9 +5,9 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-comp-lzo yes
+comp-lzo adaptive
 verb 3
-remote DOMAINTOCHANGE 1194
+remote {{ domain }} {{ port }}
 route-delay
 reneg-sec 0
 tls-auth ta.key 1
@@ -19,3 +19,7 @@ redirect-gateway
 script-security 2
 --auth-user-pass
 <ca>
+{{ ca_yunohost }}
+</ca>
+user openvpn
+group openvpn
