@@ -1,5 +1,5 @@
 location {{ path }} {
-       alias {{ local_path }};
+       alias {{ local_path }}/;
        if ($scheme = http) {
            rewrite ^ https://$server_name$request_uri? permanent;
        }

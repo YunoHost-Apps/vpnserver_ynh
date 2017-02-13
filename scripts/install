@@ -34,7 +34,7 @@ check_ip4ranges $ip4ranges
 ynh_save_args ip4ranges port local_path iface
 
 # Install official debian package
-ynh_app_dependencies openvpn openvpn-auth-ldap netmask
+ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
 
 # Create DH for main domain
 dh_size=1024

@@ -33,7 +33,7 @@ if [ "${version}" = "2.3.4-1" ]; then
     ynh_save_args domain path ip4ranges port local_path iface 
 
     # Install official debian package
-    ynh_app_dependencies openvpn openvpn-auth-ldap netmask
+    ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
 
     # Delete old cron (replace by a iptables hooks)
     sudo rm -f /etc/openvpn/yunohost.cron
@@ -41,5 +41,10 @@ if [ "${version}" = "2.3.4-1" ]; then
     # Install configured files and restart services 
     setup_and_restart
 
-    mv /var/log/openvpn.log /var/log/openvpn/status.log
+    sudo mv /var/log/openvpn.log /var/log/openvpn/status.log
+fi
+
+if [ "${version}" = "2.3.4-2" ]; then
+    sudo touch /etc/openvpn/crl.pem
+    sudo mkdir -p /etc/openvpn/users
 fi

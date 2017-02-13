@@ -26,7 +26,7 @@ check_tun_available
 # RESTORE THE APP BY MODIFYING THE SYSTEM
 #=================================================
 # Install official debian package
-ynh_app_dependencies openvpn openvpn-auth-ldap netmask
+ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
 
 install_files () {
     ynh_restore

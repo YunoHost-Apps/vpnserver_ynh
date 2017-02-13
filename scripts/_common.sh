@@ -27,29 +27,36 @@ check_tun_available () {
 }
 
 check_ip4ranges () {
-    ip4regex=(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)
-    rangeip4regex=${ip4regex}(/(3[012]|[12]\d|[123456789]))?
-    regex=^${rangeip4regex}(( )+${rangeip4regex})*$
+    _255='(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)'
+    ip4regex=(${_255}\.){3}${_255}
+    rangeip4regex="${ip4regex}(/(3[0-2]|[1-2][0-9]|[1-9]))?"
+    regex="${rangeip4regex}([[:space:]]+${rangeip4regex})*"
     # Ensure tun device is available
-    if [ ! [ $1 =~ $regex ]]; then
+    if [[ $1 =~ ^${regex}$ ]]; then
+        return 0
+    else
         err "Bad Ipv4 ranges format, aborting..."
         exit 1
     fi
+    exit 1
 }
 
 
 configure_firewall () {
     ip4ranges=$(ynh_app_setting_get $app ip4ranges | tr " " "\n")
-    iface=$(ynh_app_setting_get $app $iface)
+    iface=$(ynh_app_setting_get $app iface)
+    sudo iptables -t filter -$1 FORWARD -i "${iface}" -o tun0 -m state --state ESTABLISHED,RELATED -j ACCEPT
     for ip4range in $ip4ranges
     do
         if [[ "$1" = "A" ]];then
-            if ! (/sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+            if ! (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
                 sudo iptables -t nat -$1 POSTROUTING -s $ip4range -o "${iface}" -j MASQUERADE
+                sudo iptables -t filter -$1 FORWARD -s $ip4range -o "${iface}" -j ACCEPT
             fi
-        elif [[ "$1" = "B" ]]; then
-            if (/sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+        elif [[ "$1" = "D" ]]; then
+            if (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
                 sudo iptables -t nat -$1 POSTROUTING -s $ip4range -o "${iface}" -j MASQUERADE
+                sudo iptables -t filter -$1 FORWARD -s $ip4range -o "${iface}" -j ACCEPT
             fi
         fi
     done
@@ -71,7 +78,10 @@ deduce_gateway () {
 
 install_files () {
     # Make directories and set rights
-    sudo mkdir -p /etc/openvpn/auth "${local_path}" /var/log/openvpn
+    sudo mkdir -p /etc/openvpn/auth \
+        /etc/openvpn/users \
+        "${local_path}" \
+        /var/log/openvpn
     sudo touch /var/log/openvpn/status.log
     sudo touch /var/log/openvpn/server.log
 
@@ -79,8 +89,10 @@ install_files () {
     sudo cp -a ../sources/. $local_path
 
     # Configurations
+    set +x
     export ca_yunohost=$(sudo cat /etc/ssl/certs/ca-yunohost_crt.pem)
     export ta_key=$(sudo cat /etc/openvpn/ta.key)
+    set -x
     ynh_configure yunohost.conf "/etc/openvpn/yunohost.conf"
     ynh_configure config.ovpn "${local_path}/${domain}.conf"
     ynh_configure config-cli.ovpn "${local_path}/${domain}.ovpn"
@@ -89,7 +101,7 @@ install_files () {
     sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem "${local_path}/ca.crt"
     sudo cp ../conf/fail2ban-filter.conf /etc/fail2ban/filter.d/$app.conf
     sudo cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
-    
+    sudo touch /etc/openvpn/crl.pem
 
     # IP forwarding
     sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
@@ -115,11 +127,12 @@ setup_and_restart () {
     # Permissions
     ynh_set_default_perm "${local_path}" $webuser
     sudo chown -R $webuser: "${local_path}"
-    sudo chmod 640 "${local_path}/ta.key"
-    sudo chown $user: /var/log/openvpn.log
+    sudo chmod 640 "${local_path}/${domain}.conf"
+    sudo chmod 640 "${local_path}/${domain}.ovpn"
+    sudo chown -R $user: /var/log/openvpn
     
     # Add OpenVPN to YunoHost's monitored services
-    sudo yunohost service add openvpn --log /var/log/openvpn.log
+    sudo yunohost service add openvpn --log /var/log/openvpn/status.log
 
     # Ensure that tun device is still available, otherwise try to create it manually
     if [[ ! -c /dev/net/tun ]]; then
