@@ -2,17 +2,22 @@
   "name": "OpenVPN",
   "id": "openvpn",
   "packaging_format": 1,
+  "version": "2.3.4-3",
   "description": {
     "en": "Your Secure and Private Tunnel to the Internet",
     "fr": "Votre tunnel privé et sécurisé vers Internet"
   },
+  "requirements": {
+      "yunohost": ">= 2.4"
+  },
+  "license": "GPL-2.0",
   "url": "http://openvpn.net",
   "maintainer": {
     "name": "sebian",
     "email": "seb@fooboozoo.fr",
     "url": "https://github.com/YunoHost-Apps/openvpn_ynh"
   },
-  "multi_instance": "false",
+  "multi_instance": false,
   "services": [
       "nginx",
       "php5-fpm",
@@ -39,6 +44,25 @@
                 },
                 "example": "/openvpn",
                 "default": "/openvpn"
+            },
+            {
+                "name": "ip4ranges",
+                "type": "string",
+                "ask": {
+                    "en": "List IPv4 range to attribute to VPN clients (seperated by space)",
+                    "fr": "Listez les plages d'adresses IPv4 à attribuer aux clients VPN (séparé par des espaces)"
+                },
+                "example": "10.8.0.0/24",
+                "default": "10.8.0.0/24"
+            },
+            {
+                "name": "dynamic_ip",
+                "type": "boolean",
+                "ask": {
+                    "en": "Would you IPv4 be attributed dynamically ?",
+                    "fr": "Est ce que vous voulez que les IPv4 soient attribuées dynamiquement ?"
+                },
+                "default": false
             }
         ]
     }

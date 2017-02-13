@@ -1,0 +1,35 @@
+#!/bin/bash
+source /usr/share/yunohost/helpers
+source ../settings/scripts/_common.sh
+
+ynh_trap_on
+
+export app=$YNH_APP_INSTANCE_NAME
+export user=$app
+export webuser="${user}web"
+
+export domain=$(ynh_app_setting_get $app domain)
+export path=$(ynh_app_setting_get $app path)
+export local_path=$(ynh_app_setting_get $app local_path)
+export iface=$(ynh_app_setting_get $app iface)
+export port=$(ynh_app_setting_get $app port)
+export ip4ranges=$(ynh_app_setting_get $app ip4ranges)
+
+#=================================================
+# CHECK IF THE APP CAN BE RESTORED
+#=================================================
+ynh_check_restore
+check_iptables
+check_tun_available
+
+#================================================= 
+# RESTORE THE APP BY MODIFYING THE SYSTEM
+#=================================================
+# Install official debian package
+ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
+
+install_files () {
+    ynh_restore
+}
+
+setup_and_restart

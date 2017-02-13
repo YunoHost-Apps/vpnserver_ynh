@@ -1,24 +1,49 @@
 #!/bin/bash
+source /usr/share/yunohost/helpers
+source _common.sh
 
-domain=$(sudo yunohost app setting openvpn domain)
+app=$YNH_APP_INSTANCE_NAME
+user=$app
+webuser="${user}web"
+
+local_path=$(ynh_app_setting_get $app local_path)
+domain=$(sudo yunohost app setting $app domain)
 
 sudo service openvpn stop
 
-sudo userdel openvpn
-
-sudo apt-get remove -y -qq openvpn openvpn-auth-ldap
-
 sudo yunohost firewall disallow UDP 1194 > /dev/null 2>&1
+rm_firewall_rules
 
+sudo sysctl net.ipv4.ip_forward=0
 sudo yunohost service remove openvpn
 
+# We don't delete all /etc/openvpn because it could be used by vpnclient_ynh
 sudo rm -rf /etc/openvpn/yunohost.conf \
-  /etc/openvpn/auth/ldap.conf \
-  "/etc/yunohost/certs/${domain}/dh.pem" \
-  /etc/sysctl.d/openvpn.conf \
-  /etc/cron.d/yunohost-openvpn \
-  /etc/openvpn/yunohost.cron \
+  /etc/openvpn/auth \
   /etc/openvpn/ta.key \
-  /var/log/openvpn.log \
-  /var/www/openvpn \
-  "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
+  /etc/openvpn/users \
+  /etc/openvpn/handler.sh \
+  /etc/openvpn/ip4_attribution.csv \
+  /etc/sysctl.d/openvpn.conf
+
+# TODO: May be we shouldn't remove it
+sudo rm -rf  /var/log/openvpn
+
+
+ynh_secure_rm "$local_path"
+ynh_secure_rm "/etc/yunohost/certs/${domain}/dh.pem"
+ynh_secure_rm "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
+ynh_secure_rm "/etc/logrotate.d/$app.conf"
+ynh_secure_rm "/etc/fail2ban/filter.d/$app.conf"
+ynh_secure_rm "/etc/fail2ban/jail.d/${app}.conf"
+
+ynh_rm_nginx_conf
+ynh_rm_php_fpm_conf
+
+ynh_system_user_delete "$user"
+ynh_system_user_delete "$webuser"
+
+dep_app=${app/__/-}
+ynh_package_remove $dep_app-ynh-deps
+
+sudo yunohost app ssowatconf

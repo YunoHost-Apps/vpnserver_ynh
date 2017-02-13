@@ -1,0 +1,102 @@
+# GENERAL
+; Drop privileges
+user openvpn
+group openvpn
+
+; Don't re-read keys at ping-restart (because of dropped privileges)
+persist-key
+; Don't remove tun interface and call up/down scripts at ping-restart
+persist-tun
+
+
+# SERVER
+mode server
+port {{ port }}
+dev tun
+proto udp
+
+#max-clients 30
+
+# TLS
+tls-server
+
+ca   /etc/yunohost/certs/{{ domain }}/ca.pem
+cert /etc/yunohost/certs/{{ domain }}/crt.pem
+key  /etc/yunohost/certs/{{ domain }}/key.pem
+dh   /etc/yunohost/certs/{{ domain }}/dh.pem
+; When a client connects, check its certificate hasn't been revoked.
+; Must be accessible without root privileges
+crl-verify /etc/openvpn/crl.pem
+
+; Certificates from the clients must have a field guaranteeing they really are client certificates
+remote-cert-tls client
+
+tls-version-min 1.2
+tls-auth /etc/openvpn/ta.key 0
+cipher AES-256-CBC
+auth SHA512
+tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-256-CBC-SHA:TLS-DHE-RSA-WITH-CAMELLIA-256-CBC-SHA:TLS-DHE-RSA-WITH-AES-128-CBC-SHA:TLS-DHE-RSA-WITH-CAMELLIA-128-CBC-SHA
+
+; Clients don't need a certificate to connect (just ldap password)
+client-cert-not-required
+plugin /usr/lib/openvpn/openvpn-auth-ldap.so /etc/openvpn/auth/ldap.conf
+
+# NETWORK
+topology subnet
+; Notifies the client about the network topology we use
+push "topology subnet"
+
+; IPv4
+ifconfig {{ gateway_ip4 }} {{ gateway_mask }}
+push "route-gateway {{ gateway_ip4 }}"
+push "redirect-gateway def1"
+{% if dynamic_ip=="1" %}ifconfig-pool {{ first_ip4 }} {{ last_ip4 }} {{ gateway_mask }}{% endif %}
+
+; IPv6
+; Allow IPv6 usage inside the tunnel
+#tun-ipv6
+
+#ifconfig-ipv6 2a00:5881:8100:0100::1/64 2a00:5881:8100:0100::1
+
+; The user-specific IPv4 and IPv6 configuration is in /etc/openvpn/user/$username
+username-as-common-name
+client-config-dir /etc/openvpn/users/
+
+; DHCP emulation
+push "dhcp-option DNS {{ gateway_ip4 }}"
+
+{% if dynamic_ip=="0" %}
+# SCRIPTS
+; Add routes, notably the delegated prefix
+script-security 2
+client-connect /etc/openvpn/handler.sh
+client-disconnect /etc/openvpn/handler.sh
+{% endif %}
+
+# DIVERS
+; Logs
+verb 3
+; Don't log more than 10 consecutive messages (in the same category)
+mute 10 ; On ne log pas plus de 10 messages consecutif de la meme categorie
+
+; Adaptative tunnel compression
+comp-lzo adaptive
+push "comp-lzo adaptive"
+
+
+; The client must signal itself every 10 seconds.
+keepalive 10 60
+inactive 600
+
+; Management socket. Useful for example to kill an active client connection.
+management /var/run/openvpn.udp.socket unix
+management-client-user root
+
+; Logs
+status /var/log/openvpn/status.log
+log-append  /var/log/openvpn/server.log
+
+; LES DEUX OPTIONS SUIVANTES FONCTIONNENT SEULEMENT AVEC UDP
+; Pour contrer les encapsulations (ADSL, ...) et l'absence de découverte de MTU
+#fragment 1300 
+#mssfix
