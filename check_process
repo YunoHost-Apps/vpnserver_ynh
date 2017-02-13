@@ -4,6 +4,7 @@
                 domain="domain.tld"     (DOMAIN)
                 path="/path"    (PATH)
                 ip4ranges="10.0.0.8/24"
+                dynamic_ip=0
         ; Checks
                 pkg_linter=1
                 setup_sub_dir=1
