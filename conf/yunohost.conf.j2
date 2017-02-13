@@ -50,6 +50,7 @@ push "topology subnet"
 ifconfig {{ gateway_ip4 }} {{ gateway_mask }}
 push "route-gateway {{ gateway_ip4 }}"
 push "redirect-gateway def1"
+{% if dynamic_ip=="1" %}ifconfig-pool {{ first_ip4 }} {{ last_ip4 }} {{ gateway_mask }}{% endif %}
 
 ; IPv6
 ; Allow IPv6 usage inside the tunnel
@@ -64,12 +65,13 @@ client-config-dir /etc/openvpn/users/
 ; DHCP emulation
 push "dhcp-option DNS {{ gateway_ip4 }}"
 
-
+{% if dynamic_ip=="0" %}
 # SCRIPTS
 ; Add routes, notably the delegated prefix
-#script-security 2
-#client-connect /etc/openvpn/handler.sh
-#client-disconnect /etc/openvpn/handler.sh
+script-security 2
+client-connect /etc/openvpn/handler.sh
+client-disconnect /etc/openvpn/handler.sh
+{% endif %}
 
 # DIVERS
 ; Logs

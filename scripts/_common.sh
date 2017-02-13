@@ -69,8 +69,15 @@ add_firewall_rules () {
 rm_firewall_rules () {
     configure_firewall D
 }
+
 deduce_gateway () {
-    first_ip4_range=$(echo $ip4ranges | cut -f1 -d",")
+    
+    first_ip4_range=$(echo $ip4ranges | cut -f1 -d" ")
+    first_ip=$(netmask -r $first_ip4_range | cut -f1 -d"-" )
+    first_ip=$( netmask -x $first_ip )
+    first_ip=$(( $first_ip + 1 ))
+    export first_ip4=$( netmask $first_ip )
+    export last_ip4=$(netmask -r $first_ip4_range | cut -f2 -d"-" )
     first_ip4_range=$(netmask -s $first_ip4_range)
     export gateway_ip4=$(echo $first_ip4_range | cut -f1 -d"/")
     export gateway_mask=$(echo $first_ip4_range | cut -f2 -d"/")
@@ -84,6 +91,7 @@ install_files () {
         /var/log/openvpn
     sudo touch /var/log/openvpn/status.log
     sudo touch /var/log/openvpn/server.log
+    sudo touch /etc/openvpn/ip4_attribution.csv
 
     # Copy web files
     sudo cp -a ../sources/. $local_path
@@ -101,6 +109,7 @@ install_files () {
     sudo ln -s /etc/ssl/certs/ca-yunohost_crt.pem "${local_path}/ca.crt"
     sudo cp ../conf/fail2ban-filter.conf /etc/fail2ban/filter.d/$app.conf
     sudo cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
+    sudo cp ../conf/handler.sh /etc/openvpn/handler.sh
     sudo touch /etc/openvpn/crl.pem
 
     # IP forwarding
@@ -130,7 +139,9 @@ setup_and_restart () {
     sudo chmod 640 "${local_path}/${domain}.conf"
     sudo chmod 640 "${local_path}/${domain}.ovpn"
     sudo chown -R $user: /var/log/openvpn
-    
+    sudo chown -R $user: /etc/openvpn
+    sudo chmod 640 /etc/openvpn/ip4_attribution.csv
+    sudo chmod u+x /etc/openvpn/handler.sh  
     # Add OpenVPN to YunoHost's monitored services
     sudo yunohost service add openvpn --log /var/log/openvpn/status.log
 

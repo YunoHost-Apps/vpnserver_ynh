@@ -19,9 +19,11 @@ sudo yunohost service remove openvpn
 
 # We don't delete all /etc/openvpn because it could be used by vpnclient_ynh
 sudo rm -rf /etc/openvpn/yunohost.conf \
-  /etc/openvpn/auth/ldap.conf \
+  /etc/openvpn/auth \
   /etc/openvpn/ta.key \
   /etc/openvpn/users \
+  /etc/openvpn/handler.sh \
+  /etc/openvpn/ip4_attribution.csv \
   /etc/sysctl.d/openvpn.conf
 
 # TODO: May be we shouldn't remove it

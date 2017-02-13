@@ -20,6 +20,8 @@ export port=$(ynh_app_setting_get $app port)
 port=${port:-1194}
 export ip4ranges=$(ynh_app_setting_get $app ip4ranges)
 ip4ranges=${ip4ranges:-10.0.0.8/24}
+export dynamic_ip=$(ynh_app_setting_get $app dynamic_ip)
+dynamic_ip=${dynamic_ip:-false}
 
 
 version=$(ynh_read_json "/etc/yunohost/apps/$app/manifest.json" 'version' 2> /dev/null || echo '2.3.4-1')
@@ -30,7 +32,7 @@ ynh_check_var "$app" "app name not set"
 ynh_normalize_url_path "$path"
 
 if [ "${version}" = "2.3.4-1" ]; then
-    ynh_save_args domain path ip4ranges port local_path iface 
+    ynh_save_args domain path ip4ranges port local_path iface dynamic_ip 
 
     # Install official debian package
     ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
@@ -47,4 +49,9 @@ fi
 if [ "${version}" = "2.3.4-2" ]; then
     sudo touch /etc/openvpn/crl.pem
     sudo mkdir -p /etc/openvpn/users
+    sudo touch /etc/openvpn/ip4_attribution.csv
+    sudo cp ../conf/handler.sh /etc/openvpn/handler.sh
+    sudo chown -R $user: /etc/openvpn
+    sudo chmod 640 /etc/openvpn/ip4_attribution.csv
+    sudo chmod u+x /etc/openvpn/handler.sh  
 fi

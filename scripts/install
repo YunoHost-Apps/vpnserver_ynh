@@ -9,7 +9,7 @@ export user=$app
 export webuser="${user}web"
 
 # Retrieve arguments
-ynh_export domain path ip4ranges #admin is_public
+ynh_export domain path ip4ranges dynamic_ip #admin is_public
 ynh_find_port 1194
 export port=$port
 export local_path=/var/www/$app
@@ -31,7 +31,7 @@ check_ip4ranges $ip4ranges
 #=================================================
 # SETUP THE APP BY MODIFYING THE SYSTEM
 #=================================================
-ynh_save_args ip4ranges port local_path iface
+ynh_save_args ip4ranges port local_path iface dynamic_ip
 
 # Install official debian package
 ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask

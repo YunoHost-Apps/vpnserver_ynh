@@ -54,6 +54,15 @@
                 },
                 "example": "10.8.0.0/24",
                 "default": "10.8.0.0/24"
+            },
+            {
+                "name": "dynamic_ip",
+                "type": "boolean",
+                "ask": {
+                    "en": "Would you IPv4 be attributed dynamically ?",
+                    "fr": "Est ce que vous voulez que les IPv4 soient attribuées dynamiquement ?"
+                },
+                "default": false
             }
         ]
     }
