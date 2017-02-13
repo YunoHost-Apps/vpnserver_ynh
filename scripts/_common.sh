@@ -20,10 +20,11 @@ check_iptables () {
 
 check_tun_available () {
     # Ensure tun device is available
-    if [[ ! -c /dev/net/tun ]]; then
-        err "OpenVPN requires tun support, aborting..."
-        exit 1
-    fi
+    #if [[ ! -c /dev/net/tun ]]; then
+    #    err "OpenVPN requires tun support, aborting..."
+    #    exit 1
+    #fi
+    return 0
 }
 
 check_ip4ranges () {
