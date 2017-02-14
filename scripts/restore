@@ -14,6 +14,7 @@ export local_path=$(ynh_app_setting_get $app local_path)
 export iface=$(ynh_app_setting_get $app iface)
 export port=$(ynh_app_setting_get $app port)
 export ip4ranges=$(ynh_app_setting_get $app ip4ranges)
+export dynamic_ip=$(ynh_app_setting_get $app dynamic_ip)
 
 #=================================================
 # CHECK IF THE APP CAN BE RESTORED

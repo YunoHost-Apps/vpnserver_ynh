@@ -1,8 +1,32 @@
 #!/bin/bash
 source /usr/share/yunohost/helpers
-source _common.sh
+app=openvpn
+#source /etc/yunohost/apps/$app/scripts/_common.sh
 
 #is_upnp=$1
 #is_ipv6=$2
 
+configure_firewall () {
+    ip4ranges=$(ynh_app_setting_get $app ip4ranges | tr " " "\n")
+    iface=$(ynh_app_setting_get $app iface)
+    sudo iptables -t filter -$1 FORWARD -i "${iface}" -o tun0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+    for ip4range in $ip4ranges
+    do
+        if [[ "$1" = "A" ]];then
+            if ! (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+                sudo iptables -t nat -$1 POSTROUTING -s $ip4range -o "${iface}" -j MASQUERADE
+                sudo iptables -t filter -$1 FORWARD -s $ip4range -o "${iface}" -j ACCEPT
+            fi
+        elif [[ "$1" = "D" ]]; then
+            if (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+                sudo iptables -t nat -$1 POSTROUTING -s $ip4range -o "${iface}" -j MASQUERADE
+                sudo iptables -t filter -$1 FORWARD -s $ip4range -o "${iface}" -j ACCEPT
+            fi
+        fi
+    done
+}
+
+add_firewall_rules () {
+    configure_firewall A
+}
 add_firewall_rules
