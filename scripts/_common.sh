@@ -112,7 +112,7 @@ install_files () {
     sudo cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
     sudo cp ../conf/handler.sh /etc/openvpn/handler.sh
     sudo touch /etc/openvpn/crl.pem
-    sudo "echo $ip4ranges > /etc/openvpn/ip4ranges"
+    echo "$ip4ranges" | sudo tee /etc/openvpn/ip4ranges
 
     # IP forwarding
     sudo cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
