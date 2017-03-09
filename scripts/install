@@ -37,7 +37,7 @@ ynh_save_args ip4ranges port local_path iface dynamic_ip
 ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
 
 # Create DH for main domain
-dh_size=1024
+dh_size=4096
 info "Generate dhparam(${dh_size}) file, this step may be long..."
 sudo openssl dhparam -out "/etc/yunohost/certs/${domain}/dh.pem" $dh_size > /dev/null
 sudo openvpn --genkey --secret /etc/openvpn/ta.key
