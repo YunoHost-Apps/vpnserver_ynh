@@ -11,6 +11,7 @@ domain=$(sudo yunohost app setting $app domain)
 
 sudo service openvpn stop
 
+sudo rm -f /etc/yunohost/hooks.d/post_iptable_rules/*openvpn
 sudo yunohost firewall disallow UDP 1194 > /dev/null 2>&1
 rm_firewall_rules
 
