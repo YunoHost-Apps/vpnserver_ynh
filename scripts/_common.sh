@@ -137,7 +137,7 @@ setup_and_restart () {
 
     # Permissions
     ynh_set_default_perm "${local_path}" $webuser
-    sudo chown -R $webuser: "${local_path}"
+    sudo chown -R $webuser:www-data "${local_path}"
     sudo chmod 640 "${local_path}/${domain}.conf"
     sudo chmod 640 "${local_path}/${domain}.ovpn"
     sudo chown -R $user: /var/log/openvpn
