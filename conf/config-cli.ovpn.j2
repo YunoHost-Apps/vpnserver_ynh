@@ -5,12 +5,11 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-comp-lzo adaptive
+comp-lzo
 verb 3
 remote {{ domain }} {{ port }}
 route-delay
 reneg-sec 0
-tls-auth ta.key 1
 tls-version-min 1.2
 cipher AES-256-CBC
 auth SHA512
@@ -21,8 +20,8 @@ script-security 2
 <ca>
 {{ ca_yunohost }}
 </ca>
-user openvpn
-group openvpn
+#user openvpn
+#group openvpn
 key-direction 1
 <tls-auth>
 {{ ta_key }}

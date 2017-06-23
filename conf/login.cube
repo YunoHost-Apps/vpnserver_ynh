@@ -1,0 +1,41 @@
+{
+    "server_name": "{{ domain }}",
+    "server_port": "{{ port }}",
+    "server_proto": "udp",
+    "ip6_net": "",
+    "ip4_addr": "{{ public_ip4 }}",
+    "crt_server_ca": "{{ ca_yunohost }}",
+    "crt_client": "",
+    "crt_client_key": "",
+    "crt_client_ta": "{{ ta_key }}",
+    "login_user": "{{ user }}",
+    "login_passphrase": "{{ password }}",
+    "dns0": "89.234.141.66",
+    "dns1": "80.67.188.188",
+    "openvpn_rm": [
+      "pull",
+      "comp-lzo adaptive",
+      "explicit-exit-notify",
+      "tls-client",
+      "remote-cert-tls server",
+      "ns-cert-type server",
+      "mute 5",
+      "route-ipv6 2000::/3",
+      "redirect-gateway def1 bypass-dhcp"
+    ],
+    "openvpn_add": [
+      "client",
+      "persist-key",
+      "persist-tun",
+      "comp-lzo",
+      "tls-version-min 1.2",
+      "cipher AES-256-CBC",
+      "auth SHA512",
+      "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-256-CBC-SHA:TLS-DHE-RSA-WITH-CAMELLIA-256-CBC-SHA:TLS-DHE-RSA-WITH-AES-128-CBC-SHA:TLS-DHE-RSA-WITH-CAMELLIA-128-CBC-SHA",
+      "route-delay",
+      "reneg-sec 0",
+      "redirect-gateway",
+      "auth-nocache",
+      "key-direction 1"
+    ]
+}

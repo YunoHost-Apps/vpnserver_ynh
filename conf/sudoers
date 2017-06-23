@@ -1,0 +1,3 @@
+%openvpn ALL=(root:root) NOPASSWD:  /sbin/iptables -t nat -A PREROUTING -d * -j DNAT --to-destination *
+%openvpn ALL=(root:root) NOPASSWD: /sbin/iptables -t nat -A POSTROUTING -s * ! -d */32 -j SNAT --to-source *
+%openvpn ALL=(root:root) NOPASSWD: /sbin/iptables -t nat -A POSTROUTING -s * -o * -j MASQUERADE

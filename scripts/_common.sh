@@ -27,12 +27,23 @@ check_tun_available () {
     return 0
 }
 
+check_ip4 () {
+    _255='(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)'
+    regex=(${_255}\.){3}${_255}
+    if [[ $1 =~ ^${regex}$ ]]; then
+        return 0
+    else
+        err "Bad Ipv4 format, aborting..."
+        exit 1
+    fi
+    exit 1
+}    
+
 check_ip4ranges () {
     _255='(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)'
     ip4regex=(${_255}\.){3}${_255}
     rangeip4regex="${ip4regex}(/(3[0-2]|[1-2][0-9]|[1-9]))?"
     regex="${rangeip4regex}([[:space:]]+${rangeip4regex})*"
-    # Ensure tun device is available
     if [[ $1 =~ ^${regex}$ ]]; then
         return 0
     else
@@ -92,7 +103,7 @@ install_files () {
         /var/log/openvpn
     sudo touch /var/log/openvpn/status.log
     sudo touch /var/log/openvpn/server.log
-    sudo touch /etc/openvpn/ip4_attribution.csv
+    sudo touch /etc/openvpn/users_settings.csv
 
     # Copy web files
     sudo cp -a ../sources/. $local_path
@@ -111,6 +122,7 @@ install_files () {
     sudo cp ../conf/fail2ban-filter.conf /etc/fail2ban/filter.d/$app.conf
     sudo cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
     sudo cp ../conf/handler.sh /etc/openvpn/handler.sh
+    sudo cp ../conf/sudoers /etc/sudoers.d/openvpn
     sudo touch /etc/openvpn/crl.pem
     echo "$ip4ranges" | sudo tee /etc/openvpn/ip4ranges
 
@@ -125,7 +137,9 @@ setup_and_restart () {
     ynh_save_args gateway_ip4 gateway_mask
 
     # Open port in firewall
-    sudo yunohost firewall allow UDP $port > /dev/null 2>&1
+    if [ -z $dedicated_ip ]; then
+        sudo yunohost firewall allow Both $port > /dev/null 2>&1
+    fi
 
     # Create user
     ynh_system_user_create "$user" "/etc/openvpn/"
@@ -142,7 +156,7 @@ setup_and_restart () {
     sudo chmod 640 "${local_path}/${domain}.ovpn"
     sudo chown -R $user: /var/log/openvpn
     sudo chown -R $user: /etc/openvpn
-    sudo chmod 640 /etc/openvpn/ip4_attribution.csv
+    sudo chmod 640 /etc/openvpn/users_settings.csv
     sudo chmod u+x /etc/openvpn/handler.sh  
     # Add OpenVPN to YunoHost's monitored services
     sudo yunohost service add openvpn --log /var/log/openvpn/status.log
@@ -262,7 +276,7 @@ ynh_local_path_available () {
 ynh_save_args () {
     for var in $@;
     do
-        ynh_app_setting_set $app $var ${!var}
+        ynh_app_setting_set $app $var "${!var}"
     done
 }
 
@@ -542,7 +556,7 @@ ynh_system_user_delete () {
 ynh_configure () {
     local TEMPLATE=$1
     local DEST=$2
-    type j2 2>/dev/null || sudo pip install j2cli
+    type j2 2>/dev/null || sudo pip install j2cli jinja2
     j2 "${PKG_DIR}/conf/$TEMPLATE.j2" > "${PKG_DIR}/conf/$TEMPLATE"
     sudo cp "${PKG_DIR}/conf/$TEMPLATE" "$DEST"
 }

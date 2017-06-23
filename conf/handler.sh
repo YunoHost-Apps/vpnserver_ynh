@@ -1,10 +1,10 @@
-#!/bin/sh
- if [ "$(id -ru)" = "0" ]; then
-     SUDO=
- else
-     SUDO=sudo
- fi
- 
+#!/bin/bash
+if [ "$(id -ru)" = "0" ]; then
+    SUDO=
+else
+    SUDO=sudo
+fi
+us_file="/etc/openvpn/users_settings.csv"
  # ##### Utility
  
  log() {
@@ -12,7 +12,7 @@
      level="$1"
      shift
      # Disabled:
-     # logger -t"ovpn-script[$$]" -pdaemon."$level" -- "$@"
+     logger -t"ovpn-script[$$]" -pdaemon."$level" -- "$@"
  }
  
  # ##### Functions
@@ -27,100 +27,80 @@
  # Write user specific OpenvPN configuration to stdout
  create_conf() {
     ip4ranges=$(cat /etc/openvpn/ip4ranges | tr " " "\n")
-    ip4=$(grep $common_name /etc/openvpn/ip4_attribution.csv | awk -F"," '{print $2}')
-    if [ -z $ip4 ] ; then
-        ip4=$(find_available_ip ${ip4ranges})
-        echo "${common_name},${ip4}" >> /etc/openvpn/ip4_attribution.csv
+    reserve_ip "10.8.0.2-10.8.0.255" "${ip4ranges}"
+    private_ip4=$(get_ip 2 )
+    echo "ifconfig-push $private_ip4 $ifconfig_netmask"
+    
+    # Link to ipv4 if needed
+    public_ip4=$(get_ip 3)
+    if [ -n "$public_ip4" ]; then
+        $SUDO iptables -t nat -A PREROUTING -d $public_ip4 -j DNAT --to-destination $private_ip4
+        $SUDO iptables -t nat -A POSTROUTING -s ${private_ip4}/32 ! -d ${private_ip4}/32 -j SNAT --to-source $public_ip4
+    else
+        iface=$(ip r|awk '/default/ { print $5 }')
+        $SUDO iptables -t nat -A POSTROUTING -s $private_ip4 -o "${iface}" -j MASQUERADE
     fi
-    gateway=$(netmask -s $(echo $ip4ranges | cut -f1 -d" ") | cut -f1 -d"/")
-    IP4=$(netmask $ip4 | cut -f1 -d"/")
-     if ! [ -z "$IP4" ]; then
-         echo "ifconfig-push $IP4 $gateway"
-     fi
-     if ! [ -z "$IP6" ]; then
-         echo "ifconfig-ipv6-push $IP6/64 $ifconfig_ipv6_local"
-     fi
-     if ! [ -z "$PREFIX" ]; then
-         # Route the IPv6 delegated prefix:
-         echo "iroute-ipv6 $PREFIX"
-         # Set the OPENVPN_DELEGATED_IPV6_PREFIX in the client:
-         echo "push \"setenv-safe DELEGATED_IPV6_PREFIX $PREFIX\""
-     fi
- }
+}
  
- add_route() {
-     $SUDO ip route replace "$@"
- }
- 
- # Add the routes for the user in the kernel
- add_routes() {
-     if ! [ -z "$IP4" ]; then
-         log info "IPv4 $IP4 for $common_name"
-         add_route $IP4/32 dev $dev protocol static
-     fi
-     if ! [ -z "$IP6" ]; then
-         log info "IPv6 $IP6 for $common_name"
-         add_route $IP6/128 dev $dev protocol static
-     fi
-     if ! [ -z "$PREFIX" ]; then
-         log info "IPv6 delegated prefix $PREFIX for $common_name"
-         add_route $PREFIX via $IP6 dev $dev protocol static
-     fi
- }
- 
- remove_routes() {
-     if ! [ -z "$IP4" ]; then
-         $SUDO ip route del $IP4/32 dev $dev protocol static
-     fi
-     if ! [ -z "$IP6" ]; then
-         $SUDO ip route del $IP6/128 dev $dev protocol static
-     fi
-     if ! [ -z "$PREFIX" ]; then
-         $SUDO ip route del $PREFIX via $IP6 dev $dev protocol static
-     fi
- }
- 
- set_routes() {
-     if ! add_routes; then
-         remove_routes
-         return 1
-     fi
- }
  
 get_first_ip () {
-    
     echo $( netmask -x $(echo $1 | cut -f1 -d"-") | cut -f1 -d"/")
 }
 get_last_ip () {
-    echo $( netmask -x $(echo $1 | cut -f2 -d"-") | cut -f1 -d"/")
+    echo $( netmask -x $(echo $1 | cut -f1 -d"-") | cut -f1 -d"/")
 }
-find_available_ip () {
-    i=0
+
+# Put ip in www.xxx.yyy.zzz format
+format_ip() {
+    netmask $1 | cut -f1 -d"/" | sed -e 's/^[[:space:]]*//'
+}
+
+# Return the ip 
+# $1 public|private
+get_ip() {
+    echo $(grep $common_name $us_file | awk -F"," "{print \$$1}")
+    
+}
+
+get_next_ip() {
+
     for ip4range in $1
     do
-        ip4range=$(netmask -r $ip4range | cut -f4 -d" ")
         ip=$(($(get_first_ip $ip4range) + 0 ))
         last_ip=$(($(get_last_ip $ip4range) + 0))
-        if [ $i -eq 0 ]; then
-            gateway=$ip
-            ip=$(( $ip + 1 ))
-        fi
         while [ "$ip" \< "$last_ip" ]
         do
-            awk -F"," '{print $2}' /etc/openvpn/ip4_attribution.csv | grep $ip \
+            formated_ip=$(format_ip $ip)
+            awk -F"," "{print \$$2}" $us_file | grep $formated_ip \
             || break 2
             ip=$(( $ip + 1 ))
         done
-	awk -F"," '{print $2}' /etc/openvpn/ip4_attribution.csv | grep $ip \
-	|| break
-        i=$(( $i + 1 ))
+        formated_ip=$(format_ip $ip)
+        awk -F"," "{print \$$2}" $us_file | grep $formated_ip \
+        || break
     done
     if [ "$ip" \> "$last_ip" ]; then
         log notice "No more ip available"
         exit 1
     fi
-    echo $ip
+    echo $formated_ip
 
+}
+
+# Return the static ip of the user, if needed define it
+# $1 IPv4 ranges list ex: 10.8.0.0-10.8.0.255 10.8.1.0-10.8.1.255
+# $2 Column number in user settings CSV
+reserve_ip () {
+    local registered_ip
+    local private_ip
+    local public_ip
+    registered_ip=$(get_ip 2)
+    if [ -z "$registered_ip" ]; then
+        private_ip=$(get_next_ip $1 2)
+        public_ip=$(get_next_ip $2 3 || true)
+            
+        echo "${common_name},${private_ip},${public_ip}" >> $us_file
+    fi
 }
  # ##### OpenVPN handlers
  
@@ -128,12 +108,10 @@ find_available_ip () {
      conf="$1"
      check_user || exit 1
      create_conf > "$conf"
-     #set_routes
  }
  
  client_disconnect() {
      check_user || exit 1
-     #remove_routes
  }
  
  # ##### Dispatch

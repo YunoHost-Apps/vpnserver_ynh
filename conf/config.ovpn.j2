@@ -5,8 +5,7 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-comp-lzo adaptive
-tls-auth ta.key 1
+comp-lzo
 tls-version-min 1.2
 cipher AES-256-CBC
 auth SHA512
@@ -20,8 +19,8 @@ auth-user-pass
 auth-nocache
 verb 3
 #auth-user-pass auth.txt
-user openvpn
-group openvpn
+#user openvpn
+#group openvpn
 <ca>
 {{ ca_yunohost }}
 </ca>

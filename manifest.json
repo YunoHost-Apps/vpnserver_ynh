@@ -46,23 +46,26 @@
                 "default": "/openvpn"
             },
             {
+                "name": "dedicated_ip",
+                "type": "string",
+                "ask": {
+                    "en": "If your server has an other public ip than the main one, you can use it to make openvpn listen on all ports. It could be useful with some crazy/blocked internet access. Leave empty if it's not needed",
+                    "fr": "Si votre server a une autre ip publique que la principale, vous pouvez l'utiliser pour qu'openvpn écoute sur tous les ports. Ce peut être utile avec certains accès internet sale/bloqué. Laissez vide si ce n'est pas nécessaire"
+                },
+                "example": "169.254.10.1",
+                "default": "",
+                "optional": true
+            },
+            {
                 "name": "ip4ranges",
                 "type": "string",
                 "ask": {
-                    "en": "List IPv4 range to attribute to VPN clients (seperated by space)",
-                    "fr": "Listez les plages d'adresses IPv4 à attribuer aux clients VPN (séparé par des espaces)"
+                    "en": "If you have several public IPv4 and you want to provide VPN compatibles for self-hosting (VPN associated to a public IP address), list here public IPv4 range to attribute to VPN clients (seperated by space)",
+                    "fr": "Si vous avez plusieurs IPv4 publiques et que vous voulez fournir des VPN compatibles pour l'auto-hébergement (VPN associé à une adresse IP publique), listez ici plages d'adresses IPv4 à attribuer aux clients VPN (séparé par des espaces)"
                 },
-                "example": "10.8.0.0/24",
-                "default": "10.8.0.0/24"
-            },
-            {
-                "name": "dynamic_ip",
-                "type": "boolean",
-                "ask": {
-                    "en": "Would you IPv4 be attributed dynamically ?",
-                    "fr": "Est ce que vous voulez que les IPv4 soient attribuées dynamiquement ?"
-                },
-                "default": false
+                "example": "169.254.10.25 169.254.10.32 169.254.11.0/29",
+                "default": "",
+                "optional": true
             }
         ]
     }

@@ -11,11 +11,11 @@ persist-tun
 
 # SERVER
 mode server
+{% if dedicated_ip!="" %}local {{ dedicated_ip }}{% endif %}
 port {{ port }}
 dev tun
-proto udp
 
-#max-clients 30
+max-clients 30
 
 # TLS
 tls-server
@@ -47,10 +47,8 @@ topology subnet
 push "topology subnet"
 
 ; IPv4
-ifconfig {{ gateway_ip4 }} {{ gateway_mask }}
-push "route-gateway {{ gateway_ip4 }}"
-push "redirect-gateway def1"
-{% if dynamic_ip=="1" %}ifconfig-pool {{ first_ip4 }} {{ last_ip4 }} {{ gateway_mask }}{% endif %}
+ifconfig 10.8.0.1 255.255.255.0
+push "route-gateway 10.8.0.1"
 
 ; IPv6
 ; Allow IPv6 usage inside the tunnel
@@ -63,15 +61,14 @@ username-as-common-name
 client-config-dir /etc/openvpn/users/
 
 ; DHCP emulation
-push "dhcp-option DNS {{ gateway_ip4 }}"
+;push "dhcp-option DNS 10.8.0.1"
 
-{% if dynamic_ip=="0" %}
 # SCRIPTS
 ; Add routes, notably the delegated prefix
 script-security 2
 client-connect /etc/openvpn/handler.sh
 client-disconnect /etc/openvpn/handler.sh
-{% endif %}
+
 
 # DIVERS
 ; Logs
@@ -80,8 +77,8 @@ verb 3
 mute 10 ; On ne log pas plus de 10 messages consecutif de la meme categorie
 
 ; Adaptative tunnel compression
-comp-lzo adaptive
-push "comp-lzo adaptive"
+comp-lzo
+push "comp-lzo"
 
 
 ; The client must signal itself every 10 seconds.
@@ -96,7 +93,8 @@ management-client-user root
 status /var/log/openvpn/status.log
 log-append  /var/log/openvpn/server.log
 
+proto udp
 ; LES DEUX OPTIONS SUIVANTES FONCTIONNENT SEULEMENT AVEC UDP
 ; Pour contrer les encapsulations (ADSL, ...) et l'absence de découverte de MTU
-#fragment 1300 
-#mssfix
+;fragment 1300 
+;mssfix
