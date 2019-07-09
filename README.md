@@ -1,7 +1,7 @@
-OpenVPN for YunoHost
+OpenVPN server for YunoHost
 --------------------
 
-OpenVPN allow to create secured tunnel between computers.
+OpenVPN allow to create secured tunnel between computers. This is the server part, to which OpenVPN clients may connect to. See [vpnclient_ynh](https://github.com/labriqueinternet/vpnclient_ynh) for the client part.
 
 http://openvpn.net/
 
