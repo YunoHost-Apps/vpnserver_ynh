@@ -1,30 +1,28 @@
 {
-  "name": "OpenVPN",
-  "id": "openvpn",
-  "packaging_format": 1,
-  "version": "2.3.4-3",
-  "description": {
-    "en": "Your Secure and Private Tunnel to the Internet",
-    "fr": "Votre tunnel privé et sécurisé vers Internet"
-  },
-  "requirements": {
-      "yunohost": ">= 2.4"
-  },
-  "license": "GPL-2.0",
-  "url": "http://openvpn.net",
-  "maintainer": {
-    "name": "sebian",
-    "email": "seb@fooboozoo.fr",
-    "url": "https://github.com/YunoHost-Apps/openvpn_ynh"
-  },
-  "multi_instance": false,
-  "services": [
-      "nginx",
-      "php5-fpm",
-      "slapd",
-      "openvpn"
-  ],
-  "arguments": {
+    "name": "OpenVPN",
+    "id": "openvpn",
+    "packaging_format": 1,
+    "description": {
+        "en": "Your Secure and Private Tunnel to the Internet",
+        "fr": "Votre tunnel privé et sécurisé vers Internet"
+    },
+    "version": "2.3.4-3",
+    "url": "http://openvpn.net",
+    "license": "GPL-2.0",
+    "maintainer": {
+        "name": "No maintainer",
+    },
+    "requirements": {
+        "yunohost": ">= 3.5"
+    },
+    "multi_instance": false,
+    "services": [
+        "nginx",
+        "php7.0-fpm",
+        "slapd",
+        "openvpn"
+    ],
+    "arguments": {
         "install" : [
             {
                 "name": "domain",

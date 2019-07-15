@@ -1,50 +1,158 @@
 #!/bin/bash
-source /usr/share/yunohost/helpers
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
 source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# LOAD SETTINGS
+#=================================================
+ynh_script_progression --message="Loading installation settings..." --time --weight=1
 
 app=$YNH_APP_INSTANCE_NAME
-user=$app
-webuser="${user}web"
 
-local_path=$(ynh_app_setting_get $app local_path)
-domain=$(sudo yunohost app setting $app domain)
+domain=$(ynh_app_setting_get --app=$app --key=domain)
+port=$(ynh_app_setting_get --app=$app --key=port)
+final_path=$(ynh_app_setting_get --app=$app --key=final_path)
+ip4ranges=$(ynh_app_setting_get --app=$app --key=ip4ranges)
+iface=$(ynh_app_setting_get --app=$app --key=iface)
 
-sudo service openvpn stop
+#=================================================
+# STANDARD REMOVE
+#=================================================
+# REMOVE SERVICE FROM ADMIN PANEL
+#=================================================
 
-sudo rm -f /etc/yunohost/hooks.d/post_iptable_rules/*openvpn
-sudo yunohost firewall disallow UDP 1194 > /dev/null 2>&1
-rm_firewall_rules
+# Remove a service from the admin panel, added by `yunohost service add`
+if ynh_exec_warn_less yunohost service status openvpn >/dev/null
+then
+	ynh_script_progression --message="Removing openvpn service..." --time --weight=1
+	yunohost service remove openvpn
+fi
 
-sudo sysctl net.ipv4.ip_forward=0
-sudo yunohost service remove openvpn
+#=================================================
+# STOP AND REMOVE SERVICE
+#=================================================
+ynh_script_progression --message="Stopping the systemd service..." --time --weight=1
 
-# We don't delete all /etc/openvpn because it could be used by vpnclient_ynh
-sudo rm -rf /etc/openvpn/yunohost.conf \
-  /etc/openvpn/auth \
-  /etc/openvpn/ta.key \
-  /etc/openvpn/users \
-  /etc/openvpn/handler.sh \
-  /etc/openvpn/ip4_attribution.csv \
-  /etc/sysctl.d/openvpn.conf
+ynh_systemd_action --service_name=openvpn --action=stop
+
+#=================================================
+# REMOVE DEPENDENCIES
+#=================================================
+ynh_script_progression --message="Removing dependencies..." --time --weight=1
+
+# Remove metapackage and its dependencies
+ynh_remove_app_dependencies
+
+#=================================================
+# REMOVE APP MAIN DIR
+#=================================================
+ynh_script_progression --message="Removing app main directory..." --time --weight=1
+
+# Remove the app directory securely
+ynh_secure_remove --file="$final_path"
+
+#=================================================
+# REMOVE NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Removing nginx web server configuration..." --time --weight=1
+
+# Remove the dedicated nginx config
+ynh_remove_nginx_config
+
+#=================================================
+# REMOVE PHP-FPM CONFIGURATION
+#=================================================
+ynh_script_progression --message="Removing php-fpm configuration..." --time --weight=1
+
+# Remove the dedicated php-fpm config
+ynh_remove_fpm_config
+
+#=================================================
+# REMOVE LOGROTATE CONFIGURATION
+#=================================================
+ynh_script_progression --message="Removing logrotate configuration..." --time --weight=1
+
+# Remove the app-specific logrotate config
+ynh_remove_logrotate
+
+#=================================================
+# CLOSE A PORT
+#=================================================
+
+if yunohost firewall list | grep -q "\- $port$"
+then
+	ynh_script_progression --message="Closing port $port..."
+	ynh_exec_warn_less yunohost firewall disallow TCP $port
+fi
+
+# Remove masquerade rules
+ip4ranges_iptable=$(echo "$ip4ranges" | tr " " "\n")
+iptables -t filter -D FORWARD -i "$iface" -o tun0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+for ip4range in $ip4ranges_iptable
+do
+    if ! (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+        sudo iptables -t nat -D POSTROUTING -s $ip4range -o "$iface" -j MASQUERADE
+        sudo iptables -t filter -D FORWARD -s $ip4range -o "$iface" -j ACCEPT
+    fi
+done
+
+#=================================================
+# REMOVE FAIL2BAN CONFIGURATION
+#=================================================
+ynh_script_progression --message="Removing fail2ban configuration..." --time --weight=1
+
+# Remove the dedicated fail2ban config
+ynh_remove_fail2ban_config
+
+#=================================================
+# SPECIFIC REMOVE
+#=================================================
+# NOT SORTED STUFF
+#=================================================
+
+sysctl net.ipv4.ip_forward=0
+
+ynh_secure_remove --file="/etc/openvpn/yunohost.conf"
+ynh_secure_remove --file="/etc/openvpn/auth"
+ynh_secure_remove --file="/etc/openvpn/ta.key"
+ynh_secure_remove --file="/etc/openvpn/users"
+ynh_secure_remove --file="/etc/openvpn/handler.sh"
+ynh_secure_remove --file="/etc/openvpn/ip4_attribution.csv"
+ynh_secure_remove --file="/etc/sysctl.d/openvpn.conf"
 
 # TODO: May be we shouldn't remove it
-sudo rm -rf  /var/log/openvpn
+ynh_secure_remove --file="/var/log/openvpn"
 
+ynh_secure_remove --file="/etc/yunohost/certs/$domain/dh.pem"
+ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/openvpn.conf"
+ynh_secure_remove --file="/var/log/openvpn"
+ynh_secure_remove --file="/var/log/openvpn"
+ynh_secure_remove --file="/var/log/openvpn"
+ynh_secure_remove --file="/var/log/openvpn"
 
-ynh_secure_rm "$local_path"
-ynh_secure_rm "/etc/yunohost/certs/${domain}/dh.pem"
-ynh_secure_rm "/etc/nginx/conf.d/${domain}.d/openvpn.conf"
-ynh_secure_rm "/etc/logrotate.d/$app.conf"
-ynh_secure_rm "/etc/fail2ban/filter.d/$app.conf"
-ynh_secure_rm "/etc/fail2ban/jail.d/${app}.conf"
+# Remove hook files
+ynh_secure_remove --file="/etc/yunohost/hooks.d/post_iptable_rules/*openvpn"
 
-ynh_rm_nginx_conf
-ynh_rm_php_fpm_conf
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# REMOVE DEDICATED USER
+#=================================================
+ynh_script_progression --message="Removing the dedicated system users..." --time --weight=1
 
-ynh_system_user_delete "$user"
-ynh_system_user_delete "$webuser"
+# Delete a system user
+ynh_system_user_delete --username=$app
+ynh_system_user_delete --username=${app}web
 
-dep_app=${app/__/-}
-ynh_package_remove $dep_app-ynh-deps
+#=================================================
+# END OF SCRIPT
+#=================================================
 
-sudo yunohost app ssowatconf
+ynh_script_progression --message="Removal of $app completed" --time --last

@@ -1,46 +1,358 @@
 #!/bin/bash
-source /usr/share/yunohost/helpers
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
 source _common.sh
-
-ynh_trap_on
-
-export app=$YNH_APP_INSTANCE_NAME
-export user=$app
-export webuser="${user}web"
-
-# Retrieve arguments
-ynh_export domain path ip4ranges dedicated_ip
-ynh_find_port 1194
-export port=$port
-export local_path=/var/www/$app
-export iface=$(ip r|awk '/default/ { print $5 }')
+source /usr/share/yunohost/helpers
 
 #=================================================
-# CHECK IF THE APP CAN BE INSTALLED WITH THIS ARGS
+# MANAGE SCRIPT FAILURE
 #=================================================
-ynh_check_var "$app" "app name not set"
-#ynh_user_exists "$admin" || ynh_die "User does not exist: $admin"
-ynh_normalize_url_path "$path"
-ynh_path_validity "$domain$path"
-ynh_local_path_available "$local_path"
-check_iptables
-check_tun_available
-check_ip4ranges $ip4ranges
 
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
 
 #=================================================
-# SETUP THE APP BY MODIFYING THE SYSTEM
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
 #=================================================
-ynh_save_args ip4ranges port local_path iface dedicated_ip
 
-# Install official debian package
-ynh_app_dependencies openvpn,openvpn-auth-ldap,netmask
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+dedicated_ip=$YNH_APP_ARG_DEDICATED_IP
+ip4ranges=$YNH_APP_ARG_IP4RANGES
+
+### If it's a multi-instance app, meaning it can be installed several times independently
+### The id of the app as stated in the manifest is available as $YNH_APP_ID
+### The instance number is available as $YNH_APP_INSTANCE_NUMBER (equals "1", "2", ...)
+### The app instance name is available as $YNH_APP_INSTANCE_NAME
+###    - the first time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample
+###    - the second time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample__2
+###    - ynhexample__{N} for the subsequent installations, with N=3,4, ...
+### The app instance name is probably what interests you most, since this is
+### guaranteed to be unique. This is a good unique identifier to define installation path,
+### db names, ...
+app=$YNH_APP_INSTANCE_NAME
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
+### About --weight and --time
+### ynh_script_progression will show to your final users the progression of each scripts.
+### In order to do that, --weight will represent the relative time of execution compared to the other steps in the script.
+### --time is a packager option, it will show you the execution time since the previous call.
+### This option should be removed before releasing your app.
+### Use the execution time, given by --time, to estimate the weight of a step.
+### A common way to do it is to set a weight equal to the execution time in second +1.
+### The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
+ynh_script_progression --message="Validating installation parameters..." --time --weight=1
+
+### If the app uses nginx as web server (written in HTML/PHP in most cases), the final path should be "/var/www/$app".
+### If the app provides an internal web server (or uses another application server such as uwsgi), the final path should be "/opt/yunohost/$app"
+final_path=/var/www/$app
+test ! -e "$final_path" || ynh_die --message="This path already contains a folder"
+
+# Register (book) web path
+ynh_webpath_register --app=$app --domain=$domain --path_url=$path_url
+
+
+# Check if iptables is working
+if ! iptables -L > /dev/null 2>&1
+then
+    ynh_die --message="iptables is not available in your environment, aborting..."
+fi
+
+# Check IPv4 range argument
+_255='(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)'
+ip4regex=(${_255}\.){3}${_255}
+rangeip4regex="${ip4regex}(/(3[0-2]|[1-2][0-9]|[1-9]))?"
+regex="${rangeip4regex}([[:space:]]+${rangeip4regex})*"
+if [[ $ip4ranges =~ ^${regex}$ ]]
+then
+    echo "IPv4 ranges format ok"
+else
+    ynh_die --message="Bad Ipv4 ranges format, aborting..."
+fi
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+ynh_script_progression --message="Storing installation settings..." --time --weight=1
+
+ynh_app_setting_set --app=$app --key=domain --value=$domain
+ynh_app_setting_set --app=$app --key=path --value=$path_url
+ynh_app_setting_set --app=$app --key=ip4ranges --value=$ip4ranges
+ynh_app_setting_set --app=$app --key=dedicated_ip --value=$dedicated_ip
+
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+# FIND AND OPEN A PORT
+#=================================================
+
+if [ -z "$dedicated_ip" ]
+then
+    ynh_script_progression --message="Configuring firewall..." --time --weight=1
+
+    ### Use these lines if you have to open a port for the application
+    ### `ynh_find_port` will find the first available port starting from the given port.
+    ### If you're not using these lines:
+    ###		- Remove the section "CLOSE A PORT" in the remove script
+
+    # Find a free port
+    port=$(ynh_find_port --port=1194)
+    # Open this port
+    ynh_exec_warn_less yunohost firewall allow --no-upnp Both $port
+    ynh_app_setting_set --app=$app --key=port --value=$port
+fi
+
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+ynh_script_progression --message="Installing dependencies..." --time --weight=1
+
+### `ynh_install_app_dependencies` allows you to add any "apt" dependencies to the package.
+### Those deb packages will be installed as dependencies of this package.
+### If you're not using this helper:
+###		- Remove the section "REMOVE DEPENDENCIES" in the remove script
+###		- Remove the variable "pkg_dependencies" in _common.sh
+###		- As well as the section "REINSTALL DEPENDENCIES" in the restore script
+###		- And the section "UPGRADE DEPENDENCIES" in the upgrade script
+
+ynh_install_app_dependencies $pkg_dependencies
+
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+ynh_script_progression --message="Setting up source files..." --time --weight=1
+
+ynh_app_setting_set --app=$app --key=final_path --value=$final_path
+
+mkdir -p "$final_path"
+# Copy extra source files
+cp -a $YNH_CWD/../sources/extra_files/app/. "$final_path"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring nginx web server..." --time --weight=1
+
+### `ynh_add_nginx_config` will use the file conf/nginx.conf
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+ynh_script_progression --message="Configuring system user..." --time --weight=1
+
+# Create system users
+ynh_system_user_create --username=$app --home_dir="/etc/openvpn/"
+webuser=${app}web
+ynh_system_user_create --username=$webuser --home_dir="$final_path"
+
+#=================================================
+# PHP-FPM CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring php-fpm..." --time --weight=1
+
+### `ynh_add_fpm_config` is used to set up a PHP config.
+### You can remove it if your app doesn't use PHP.
+### `ynh_add_fpm_config` will use the files conf/php-fpm.conf
+### If you're not using these lines:
+###		- You can remove these files in conf/.
+###		- Remove the section "BACKUP THE PHP-FPM CONFIGURATION" in the backup script
+###		- Remove also the section "REMOVE PHP-FPM CONFIGURATION" in the remove script
+###		- As well as the section "RESTORE THE PHP-FPM CONFIGURATION" in the restore script
+###		With the reload at the end of the script.
+###		- And the section "PHP-FPM CONFIGURATION" in the upgrade script
+
+# Create a dedicated php-fpm config
+ynh_add_fpm_config
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# STUFF NOT YET SORTED...
+#=================================================
+
+iface=$(ip r|awk '/default/ { print $5 }')
+ynh_app_setting_set --app=$app --key=iface --value=$iface
+
 
 # Create DH for main domain
 dh_size=1024
-info "Generate dhparam(${dh_size}) file, this step may be long..."
-sudo openssl dhparam -out "/etc/yunohost/certs/${domain}/dh.pem" $dh_size > /dev/null
-sudo openvpn --genkey --secret /etc/openvpn/ta.key
+ynh_print_info "Generate dhparam($dh_size) file, this step may be long..."
+openssl dhparam -out "/etc/yunohost/certs/$domain/dh.pem" $dh_size > /dev/null
+openvpn --genkey --secret /etc/openvpn/ta.key
 
-# Install configured files and restart services 
-setup_and_restart
+
+# Find gateway ip and mask and save it
+first_ip4_range=$(echo $ip4ranges | cut -f1 -d" ")
+first_ip=$(netmask -r $first_ip4_range | cut -f1 -d"-" )
+first_ip=$( netmask -x $first_ip )
+first_ip=$(( $first_ip + 1 ))
+first_ip4=$( netmask $first_ip )
+last_ip4=$(netmask -r $first_ip4_range | cut -f2 -d"-" )
+first_ip4_range=$(netmask -s $first_ip4_range)
+gateway_ip4=$(echo $first_ip4_range | cut -f1 -d"/")
+gateway_mask=$(echo $first_ip4_range | cut -f2 -d"/")
+
+ynh_app_setting_set --app=$app --key=gateway_ip4 --value=$gateway_ip4
+ynh_app_setting_set --app=$app --key=gateway_mask --value=$gateway_mask
+
+
+# Make directories and set rights
+mkdir -p /etc/openvpn/auth \
+    /etc/openvpn/users \
+    /var/log/openvpn
+
+touch /var/log/openvpn/status.log
+touch /var/log/openvpn/server.log
+touch /etc/openvpn/users_settings.csv
+
+# Configurations
+conf_file="/etc/openvpn/yunohost.conf"
+cp yunohost.conf "$conf_file"
+if [ -n "$dedicated_ip" ]; then
+    ynh_replace_string --match_string="^# local __DEDICATED_IP__" --replace_string="local $dedicated_ip" --target_file="$conf_file"
+fi
+ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
+ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
+
+conf_file="$final_path/$domain.conf"
+cp config.ovpn "$conf_file"
+ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
+ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
+ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
+ynh_replace_string --match_string="__TA_KEY__" --replace_string="$(cat /etc/openvpn/ta.key)" --target_file="$conf_file"
+
+conf_file="$final_path/$domain.ovpn"
+cp config-cli.ovpn "$conf_file"
+ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
+ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
+ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
+ynh_replace_string --match_string="__TA_KEY__" --replace_string="$(cat /etc/openvpn/ta.key)" --target_file="$conf_file"
+
+cp ../conf/ldap.conf /etc/openvpn/auth/
+ln -s /etc/ssl/certs/ca-yunohost_crt.pem "$final_path/ca.crt"
+cp ../conf/handler.sh /etc/openvpn/handler.sh
+cp ../conf/sudoers /etc/sudoers.d/openvpn
+touch /etc/openvpn/crl.pem
+echo "$ip4ranges" > /etc/openvpn/ip4ranges
+
+# IP forwarding
+cp ../conf/sysctl /etc/sysctl.d/openvpn.conf
+sysctl -p /etc/sysctl.d/openvpn.conf
+
+# Ensure that tun device is still available, otherwise try to create it manually
+if [ ! -c /dev/net/tun ]
+then
+    mkdir -p /dev/net
+    mknod /dev/net/tun c 10 200
+    chmod 666 /dev/net/tun
+fi
+
+# Add masquerade rules
+ip4ranges_iptable=$(echo "$ip4ranges" | tr " " "\n")
+iptables -t filter -A FORWARD -i "$iface" -o tun0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+for ip4range in $ip4ranges_iptable
+do
+    if ! (sudo /sbin/iptables -L -t nat | grep $ip4range | grep MASQUERADE > /dev/null 2>&1); then
+        sudo iptables -t nat -A POSTROUTING -s $ip4range -o "$iface" -j MASQUERADE
+        sudo iptables -t filter -A FORWARD -s $ip4range -o "$iface" -j ACCEPT
+    fi
+done
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+### For security reason, any app should set the permissions to root: before anything else.
+### Then, if write authorization is needed, any access should be given only to directories
+### that really need such authorization.
+
+# Set permissions
+chown -R $webuser: "$final_path"
+chmod -R 664 "$final_path"
+find "$final_path" -type d -print0 | xargs -0 chmod 775
+
+chown -R $webuser:www-data "$final_path"
+chmod 640 "$final_path/$domain.conf"
+chmod 640 "$final_path/$domain.ovpn"
+chown -R $app: /var/log/openvpn
+chown -R $app: /etc/openvpn
+chmod 640 /etc/openvpn/users_settings.csv
+chmod u+x /etc/openvpn/handler.sh
+
+#=================================================
+# SETUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Configuring log rotation..." --time --weight=1
+
+# Use logrotate to manage application logfile(s)
+cp ../conf/logrotate.conf /etc/logrotate.d/$app.conf
+
+#=================================================
+# ADVERTISE SERVICE IN ADMIN PANEL
+#=================================================
+
+### `yunohost service add` is a CLI yunohost command to add a service in the admin panel.
+### You'll find the service in the 'services' section of YunoHost admin panel.
+### This CLI command would be useless if the app does not have any services (systemd or sysvinit)
+### If you're not using these lines:
+###		- You can remove these files in conf/.
+###		- Remove the section "REMOVE SERVICE FROM ADMIN PANEL" in the remove script
+###		- As well as the section "ADVERTISE SERVICE IN ADMIN PANEL" in the restore script
+
+yunohost service add openvpn --log "/var/log/openvpn/status.log"
+# if using yunohost version 3.2 or more in the 'manifest.json', a description can be added
+#yunohost service add $app --description "$app daemon for XXX" --log "/var/log/$app/$app.log"
+
+#=================================================
+# START SYSTEMD SERVICE
+#=================================================
+ynh_script_progression --message="Starting a systemd service..." --time --weight=1
+
+### `ynh_systemd_action` is used to start a systemd service for an app.
+### Only needed if you have configure a systemd service
+### If you're not using these lines:
+###		- Remove the section "STOP SYSTEMD SERVICE" and "START SYSTEMD SERVICE" in the backup script
+###		- As well as the section "START SYSTEMD SERVICE" in the restore script
+###		- As well as the section"STOP SYSTEMD SERVICE" and "START SYSTEMD SERVICE" in the upgrade script
+###		- And the section "STOP SYSTEMD SERVICE" and "START SYSTEMD SERVICE" in the change_url script
+
+yunohost service enable openvpn
+
+# Start a systemd service
+ynh_systemd_action --service_name=openvpn --action=start
+
+#=================================================
+# SETUP FAIL2BAN
+#=================================================
+ynh_script_progression --message="Configuring fail2ban..." --time --weight=1
+
+ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file=fail2ban-jail.conf
+ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file=fail2ban-jail.conf
+
+# Create a dedicated fail2ban config
+ynh_add_fail2ban_config --use_template
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+ynh_script_progression --message="Reloading nginx web server..." --time --weight=1
+
+ynh_systemd_action --service_name=nginx --action=reload
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression --message="Installation of $app completed" --time --last
