@@ -10,7 +10,7 @@
     "url": "http://openvpn.net",
     "license": "GPL-2.0",
     "maintainer": {
-        "name": "No maintainer",
+        "name": "No maintainer"
     },
     "requirements": {
         "yunohost": ">= 3.5"
@@ -19,7 +19,6 @@
     "services": [
         "nginx",
         "php7.0-fpm",
-        "slapd",
         "openvpn"
     ],
     "arguments": {

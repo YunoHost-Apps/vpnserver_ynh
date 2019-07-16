@@ -1,39 +1,83 @@
 #!/bin/bash
 
-# causes the shell to exit if any subcommand or pipeline returns a non-zero status
-set -e
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
 
-# Source YNH helpers
-. /usr/share/yunohost/helpers
+#Keep this path for calling _common.sh inside the execution's context of backup and restore scripts
+source ../settings/scripts/_common.sh
+source /usr/share/yunohost/helpers
 
-backup_dir=$1
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
 
-# Get app instance name
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# LOAD SETTINGS
+#=================================================
+ynh_script_progression --message="Loading installation settings..." --time --weight=1
+
 app=$YNH_APP_INSTANCE_NAME
 
-# Retrieve arguments
-domain=$(ynh_app_setting_get $app domain)
-path=$(ynh_app_setting_get $app path)
-local_path=$(ynh_app_setting_get $app local_path)
+final_path=$(ynh_app_setting_get --app=$app --key=final_path)
+domain=$(ynh_app_setting_get --app=$app --key=domain)
 
-my_ynh_backup () {
-    ynh_backup $@
-    echo $2 $1 >> $backup_dir/list    
-}
+#=================================================
+# STANDARD BACKUP STEPS
+#=================================================
+# BACKUP THE APP MAIN DIR
+#=================================================
+ynh_script_progression --message="Backing up the main app directory..." --time --weight=1
 
-# Copy the app files
-my_ynh_backup "$local_path" "sources"
-my_ynh_backup "/etc/openvpn" "etc"
-my_ynh_backup "/etc/yunohost/certs/${domain}/dh.pem" "certs/dh.pem"
+ynh_backup --src_path="$final_path"
 
-# Copy the conf files
-my_ynh_backup "/etc/sysctl.d/openvpn.conf" "conf/sysctl"
-my_ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/nginx.conf"
-my_ynh_backup "/etc/php5/fpm/pool.d/$app.conf" "conf/php-fpm.conf"
-my_ynh_backup "/etc/php5/fpm/conf.d/20-$app.ini" "conf/php-fpm.ini"
-my_ynh_backup "/etc/fail2ban/jail.d/${app}.conf" "conf/fail2ban-jail.conf"
-my_ynh_backup "/etc/fail2ban/filter.d/$app.conf" "conf/fail2ban-filter.conf"
-my_ynh_backup "/etc/logrotate.d/$app.conf" "conf/logrotate.conf"
+#=================================================
+# BACKUP THE NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Backing up nginx web server configuration..." --time --weight=1
 
-# Copy log
-my_ynh_backup "/var/log/openvpn" "log"
+ynh_backup --src_path="/etc/nginx/conf.d/$domain.d/$app.conf"
+
+#=================================================
+# BACKUP THE PHP-FPM CONFIGURATION
+#=================================================
+ynh_script_progression --message="Backing up php-fpm configuration..." --time --weight=1
+
+ynh_backup --src_path="/etc/php/7.0/fpm/pool.d/$app.conf"
+
+#=================================================
+# BACKUP FAIL2BAN CONFIGURATION
+#=================================================
+ynh_script_progression --message="Backing up fail2ban configuration..." --time --weight=1
+
+ynh_backup --src_path="/etc/fail2ban/jail.d/$app.conf"
+ynh_backup --src_path="/etc/fail2ban/filter.d/$app.conf"
+
+#=================================================
+# SPECIFIC BACKUP
+#=================================================
+# BACKUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Backing up logrotate configuration..." --time --weight=1
+
+ynh_backup --src_path="/etc/logrotate.d/$app"
+
+#=================================================
+# BACKUP SPECIFIC FILES
+#=================================================
+
+ynh_backup --src_path="/etc/openvpn"
+ynh_backup --src_path="/etc/yunohost/certs/$domain/dh.pem"
+ynh_backup --src_path="/etc/sysctl.d/openvpn.conf"
+ynh_backup --src_path="/var/log/openvpn"
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression --message="Backup script completed for $app. (YunoHost will then actually copy those files to the archive)." --time --last

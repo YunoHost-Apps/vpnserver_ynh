@@ -84,7 +84,6 @@ ynh_script_progression --message="Storing installation settings..." --time --wei
 
 ynh_app_setting_set --app=$app --key=domain --value=$domain
 ynh_app_setting_set --app=$app --key=path --value=$path_url
-ynh_app_setting_set --app=$app --key=ip4ranges --value=$ip4ranges
 ynh_app_setting_set --app=$app --key=dedicated_ip --value=$dedicated_ip
 
 #=================================================
@@ -217,7 +216,7 @@ touch /etc/openvpn/users_settings.csv
 
 # Configurations
 conf_file="/etc/openvpn/yunohost.conf"
-cp yunohost.conf "$conf_file"
+cp ../conf/yunohost.conf "$conf_file"
 if [ -n "$dedicated_ip" ]; then
     ynh_replace_string --match_string="^# local __DEDICATED_IP__" --replace_string="local $dedicated_ip" --target_file="$conf_file"
 fi
@@ -225,14 +224,14 @@ ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_f
 ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
 
 conf_file="$final_path/$domain.conf"
-cp config.ovpn "$conf_file"
+cp ../conf/config.ovpn "$conf_file"
 ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
 ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
 ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
 ynh_replace_string --match_string="__TA_KEY__" --replace_string="$(cat /etc/openvpn/ta.key)" --target_file="$conf_file"
 
 conf_file="$final_path/$domain.ovpn"
-cp config-cli.ovpn "$conf_file"
+cp ../conf/config-cli.ovpn "$conf_file"
 ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
 ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
 ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
