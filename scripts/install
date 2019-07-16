@@ -227,14 +227,16 @@ conf_file="$final_path/$domain.conf"
 cp ../conf/config.ovpn "$conf_file"
 ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
 ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
-ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
+# Temp fix for getopts -> https://github.com/YunoHost/yunohost/pull/752
+ca_yunohost=$(cat /etc/ssl/certs/ca-yunohost_crt.pem)
+ynh_replace_special_string --match_string="__CA_YUNOHOST__" --replace_string="${ca_yunohost//-/\\-}" --target_file="$conf_file"
 ynh_replace_string --match_string="__TA_KEY__" --replace_string="$(cat /etc/openvpn/ta.key)" --target_file="$conf_file"
 
 conf_file="$final_path/$domain.ovpn"
 cp ../conf/config-cli.ovpn "$conf_file"
 ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$conf_file"
 ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$conf_file"
-ynh_replace_string --match_string="__CA_YUNOHOST__" --replace_string="$(cat /etc/ssl/certs/ca-yunohost_crt.pem)" --target_file="$conf_file"
+ynh_replace_special_string --match_string="__CA_YUNOHOST__" --replace_string="${ca_yunohost//-/\\-}" --target_file="$conf_file"
 ynh_replace_string --match_string="__TA_KEY__" --replace_string="$(cat /etc/openvpn/ta.key)" --target_file="$conf_file"
 
 cp ../conf/ldap.conf /etc/openvpn/auth/
