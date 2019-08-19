@@ -1,11 +1,11 @@
 {
-  "name": "OpenVPN",
-  "id": "openvpn",
+  "name": "VPN server",
+  "id": "vpnserver",
   "packaging_format": 1,
   "version": "2.3.4-3",
   "description": {
-    "en": "Your Secure and Private Tunnel to the Internet",
-    "fr": "Votre tunnel privé et sécurisé vers Internet"
+    "en": "A server providing Secure and Private Tunnel to the Internet",
+    "fr": "Un service permettant de fournir des tunnel privé et sécurisé vers Internet"
   },
   "requirements": {
       "yunohost": ">= 2.4"
@@ -15,7 +15,7 @@
   "maintainer": {
     "name": "sebian",
     "email": "seb@fooboozoo.fr",
-    "url": "https://github.com/YunoHost-Apps/openvpn_ynh"
+    "url": "https://github.com/YunoHost-Apps/vpnserver_ynh"
   },
   "multi_instance": false,
   "services": [
